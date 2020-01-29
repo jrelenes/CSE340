@@ -1,0 +1,24 @@
+POLY F1 =
+		x^2 + 1;
+POLY F2(x,y,z) = x^2 + y + z + 1;
+POLY F3(y) = y^2 + 1;
+POLY F4(x,y) = x^2 + y^2;
+POLY G1 = x^2 + 1;
+POLY F5 = x^2 + 1;
+POLY G2(X,Y,Z,W) = X Y^2 + X Z + W + 1;
+START
+INPUT X;
+INPUT Z;
+F1(Z);
+F2(X,Z,Z);
+INPUT X;
+INPUT Y;
+INPUT Z;
+F3(X);
+F4(X,Y);
+INPUT X;
+INPUT Z;
+INPUT W;
+G2(X,Z,WZ
+);
+1 2 3 18 19 22 33 12 11 16

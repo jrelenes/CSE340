@@ -8,6 +8,8 @@
 
 #include <string>
 #include "lexer.h"
+#include <vector>
+using namespace std;
 
 class Parser {
   private:
@@ -42,9 +44,21 @@ class Parser {
     void parseArgument_list();
     void parseArgument();
 
-
-
 };
+
+
+//UNDER CONSTRUCTION
+    struct symbolTableN
+    {
+      string variable;
+      int tableIndex;
+      
+    };
+
+    vector<struct symbolTableN> symbolTable;
+    vector<int> memory;
+//*********************
+
 
 #endif
 

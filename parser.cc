@@ -13,6 +13,11 @@
 
 using namespace std;
 
+//UNDER CONSTRUCTION
+int next_available = 0; //memory counter
+symbolTableN* table = new symbolTableN(); // 
+//*********************
+
 void Parser::syntax_error()
 {
     cout << "SYNTAX ERROR !!!\n";
@@ -28,10 +33,15 @@ void Parser::syntax_error()
 Token Parser::expect(TokenType expected_type)
 {
     Token t = lexer.GetToken();
+
+    
     if (t.token_type != expected_type)
         syntax_error();
     return t;
+
 }
+
+
 
 // this function simply checks the next token without
 // consuming the input

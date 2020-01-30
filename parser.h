@@ -9,6 +9,7 @@
 #include <string>
 #include "lexer.h"
 #include <vector>
+#include <deque>
 using namespace std;
 
 class Parser {
@@ -56,8 +57,14 @@ class Parser {
     };
 
     vector<struct symbolTableN> symbolTable;
+    
+    //stores values of variables
     vector<int> memory;
 //*********************
+
+//stores variable inputs
+deque<int> variableInputs;
+
 
 
 #endif

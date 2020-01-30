@@ -25,7 +25,7 @@ void Parser::syntax_error()
 }
 
 // this function gets a token and checks if it is
-// of the expected type. If it is, the token is
+// of the expected typlse. If it is, the token is
 // returned, otherwise, synatx_error() is generated
 // this function is particularly useful to match
 // terminals in a right hand side of a rule.
@@ -71,12 +71,22 @@ void Parser::parseProgram()
     parseStart();
     cout<<"4"<<endl;
 }
-
+/////////////////////////////////////////////////////////
 void Parser::parseInputs()
 {
     cout<<"5"<<endl;
-    expect(NUM);
+
+    //stores variable values
     Token t = peek();
+    if(t.token_type != EOF)
+    {
+        variableInputs.push_back(atoi(t.lexeme));
+    }
+    
+    //continues normal parsing
+    
+    expect(NUM);
+    t = peek();
     if(t.token_type == NUM)
     {
         cout<<"5A"<<endl;
@@ -87,6 +97,8 @@ void Parser::parseInputs()
     return;
     }  
     cout<<"6"<<endl;
+
+    
 }
 
 void Parser::parsePoly_decl_section()
@@ -345,6 +357,33 @@ void Parser::parseInput_statement()
 {
     cout<<"41"<<endl;
     expect(INPUT);
+
+//variable memory allocation
+    Token t = peek();
+
+    bool variableExists = false;
+
+    for(auto begin : symbolTable)
+    {
+        if(begin.variable == t.lexeme)
+        {
+            variableExists = true;
+            break;
+        }
+    } 
+
+    if(!variableExists)
+    {
+
+     table->variable = t.lexeme;
+     table->tableIndex = next_available;
+     symbolTable.push_back(*table);
+     memory.push_back(0);
+     next_available++;
+
+    }
+
+//continues normal parser operations
     expect(ID);
     expect(SEMICOLON);
     cout<<"42"<<endl;

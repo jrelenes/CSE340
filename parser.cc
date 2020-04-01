@@ -1,440 +1,1030 @@
-/*
- * Copyright (C) Rida Bazzi, 2020
- *
- * Do not share this file with anyone
- *
- * Do not post this file or derivatives of
- * of this file online
- *
- */
-#include <iostream>
 #include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <string.h>
+#include "compiler.h"
+#include <iostream>
 #include "parser.h"
-
+#include <map>
+#include "compiler.h"
 using namespace std;
 
-//UNDER CONSTRUCTION
-int next_available = 0; //memory counter
-symbolTableN* table = new symbolTableN(); // 
-//*********************
 
-void Parser::syntax_error()
-{
-    cout << "SYNTAX ERROR !!!\n";
-    exit(1);
-}
+//indices of variables
+map<string,int> symbolTable;
 
-// this function gets a token and checks if it is
-// of the expected typlse. If it is, the token is
-// returned, otherwise, synatx_error() is generated
-// this function is particularly useful to match
-// terminals in a right hand side of a rule.
-// Written by Mohsen Zohrevandi
-Token Parser::expect(TokenType expected_type)
+//FIRST(program)={ID}
+//FIRST(var_section)={ID}
+//FIRST(id_list)={ID}
+//FIRST(body)={LBRACE}
+//FIRST(stmt_list)={ID, WHILE, IF, SWITCH, FOR, output, input}
+//FIRST(stmt)={ID, WHILE, IF, SWITCH, FOR, output, input}
+//FIRST(assign_stmt)={ID}
+//FIRST(expr)={ID, NUM}
+//FIRST(primary)={ID, NUM}
+//FIRST(op)={PLUS, MINUS, MULT, DIV}
+//FIRST(output_stmt)={output}
+//FIRST(input_stmt)={input}
+//FIRST(while_stmt)={WHILE}
+//FIRST(if_stmt)={IF}
+//FIRST(condition)={ID, NUM}
+//FIRST(relop)={GREATER, LESS, NOTEQUAL}
+//FIRST(switch_stmt)={SWITCH}
+//FIRST(for_stmt)={FOR}
+//FIRST(case_list)={CASE}
+//FIRST(case)={CASE}
+//FIRST(default_case)={DEFAULT}
+//FIRST(inputs)={NUM}
+//FIRST(num_list)={NUM}
+
+
+//FOLLOW(program)={$}
+//FOLLOW(var_section)={LBRACE}
+//FOLLOW(id_list)={SEMICOLON, $}
+//FOLLOW(body)={NUM, $}
+//FOLLOW(stmt_list)={$}
+//FOLLOW(stmt)={ID, WHILE, IF, SWITCH, FOR, output, input, $}
+//FOLLOW(assign_stmt)={ID, NUM, RPAREN, $}
+//FOLLOW(expr)={SEMICOLON}
+//FOLLOW(primary)={SEMICOLON, PLUS, MINUS, MULT, DIV, GREATER, LESS, NOTEQUAL, $}
+//FOLLOW(op)={ID, NUM}
+//FOLLOW(output_stmt)={$}
+//FOLLOW(input_stmt)={$}
+//FOLLOW(while_stmt)={$}
+//FOLLOW(if_stmt)={$}
+//FOLLOW(condition)={LBRACE, SEMICOLON}
+//FOLLOW(relop)={ID, NUM}
+//FOLLOW(switch_stmt)={$}
+//FOLLOW(for_stmt)={$}
+//FOLLOW(case_list)={RBRACE, DEFAULT, $}
+//FOLLOW(case)={$, CASE}
+//FOLLOW(default_case)={RBRACE}
+//FOLLOW(inputs)={$}
+//FOLLOW(num_list)={$}
+
+
+struct InstructionNode * parse_generate_intermediate_representation()
 {
-    Token t = lexer.GetToken();
+
+    Parser initialize;
+
+    struct InstructionNode* test;
+    
+     test = initialize.program();
+
+    /*
+    cout<<test->type<<endl;
+    cout<<IN<<endl;
+    cout<<test->next->type<<endl;
+    cout<<ASSIGN<<endl;
+    cout<<test->next->next->type<<endl;
+    cout<<test->next->next->next->type<<endl;
+    cout<<test->next->next->next->next->type<<endl;
+    */
+   
+    return test;
+
+};
+
+ struct InstructionNode* Parser::program()
+{
+    InstructionNode * final;
+
+    Token t= lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != ID)
+    {
+        cout<<"Syntax error 1"<<endl;
+        return 0;
+    }
+    var_section();
+    final = body();
+
+    //throws a syntax error due to type error
+    parse_inputs();
+    Token k= lexer.GetToken();
+    lexer.UngetToken(k);
+    if(k.token_type != END_OF_FILE)
+    {
+        cout<<"Syntax error 2"<<endl;
+        return 0;
+    }
+
+    /////////////
+    struct InstructionNode* test = final;
+    /*
+    
+    while(test->next != NULL)
+    {   
+        cout<<test->type<<endl;
+        test = test->next;
+    }
+    
+    /*
+    cout<<test->type<<endl;
+    cout<<test->next->type<<endl;
+    cout<<test->next->next->type<<endl;
+    cout<<test->next->next->next->type<<endl;
+    cout<<test->next->next->next->output_inst.var_index<<endl;
+    cout<<test->next->next->next->next->type<<endl;
+
+    cout<<test->next->next->next->next->next->type<<endl;
+    cout<<test->next->next->next->next->next->next->output_inst.var_index<<endl;
+    cout<<test->next->next->next->next->next->next->next->type<<endl;
+
+*/  
+
+    //cout<<mem[test->next->next->next->next->cjmp_inst.operand1_index]<<" "<<"here"<<endl;
+/*
+    
+    cout<<"first: INPUT"<<" "<<IN<<endl;
+    cout<<"first: ASSIGN"<<" "<<ASSIGN<<endl;
+    cout<<"first: CJMP"<<" "<<CJMP<<endl;
+    cout<<"first: OUT"<<" "<<OUT<<endl;
+    cout<<"first: JMP"<<" "<<JMP<<endl;
+    cout<<"first: NOOP"<<" "<<NOOP<<endl;
+*/
+
+    ///////////
 
     
-    if (t.token_type != expected_type)
-        syntax_error();
-    return t;
-
+    return final;
+    //end of error 29 & 2
 }
 
-
-
-// this function simply checks the next token without
-// consuming the input
-// Written by Mohsen Zohrevandi
-Token Parser::peek()
+int Parser::var_section()
 {
+    Token t= lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != ID)
+    {
+        cout<<"Syntax error 3"<<endl;
+        return 0;
+    }
+    id_list();
+    lexer.GetToken();
+
+
+    Token k= lexer.GetToken();
+    lexer.UngetToken(k);
+    if(k.token_type != LBRACE)
+    {
+        cout<<"Syntax error 4"<<endl;
+        return 0;
+    }
+}
+
+//where the ID information in located
+int Parser::id_list()
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID)
+    {
+        cout<<"Syntax error 5"<<endl;
+        return 0;
+    }
+    Token id = lexer.GetToken();
+    //cout<<id.lexeme<<" ";
+
+    //declare memory for variable and intializes
+    // memory location to zero
+
+    symbolTable[id.lexeme] = next_available;
+    mem[next_available] = 0;
+    next_available++;
+
+
     Token t = lexer.GetToken();
     lexer.UngetToken(t);
-    return t;
-}
 
-// Parsing
-
-void Parser::parseInput()
-{
-    cout<<"1"<<endl;
-    parseProgram();
-    parseInputs();
-    expect(END_OF_FILE);
-    cout<<"2"<<endl;
-}
-
-void Parser::parseProgram()
-{
-    cout<<"3"<<endl;
-    parsePoly_decl_section();
-    parseStart();
-    cout<<"4"<<endl;
-}
-/////////////////////////////////////////////////////////
-void Parser::parseInputs()
-{
-    cout<<"5"<<endl;
-
-    //stores variable values
-    Token t = peek();
-    if(t.token_type != EOF)
-    {
-        variableInputs.push_back(atoi(t.lexeme));
-    }
-    
-    //continues normal parsing
-    
-    expect(NUM);
-    t = peek();
-    if(t.token_type == NUM)
-    {
-        cout<<"5A"<<endl;
-    parseInputs();
-    }
-    else
-    {
-    return;
-    }  
-    cout<<"6"<<endl;
-
-    
-}
-
-void Parser::parsePoly_decl_section()
-{
-    cout<<"7"<<endl;
-    parsePoly_decl();
-    Token t = peek();
-    if(t.token_type == POLY)
-    {
-        parsePoly_decl_section();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"8"<<endl;
-}
-
-void Parser::parsePoly_decl()
-{
-    cout<<"9"<<endl;
-        expect(POLY);
-        cout<<"error011"<<endl;
-        parsePolynomial_header();
-        cout<<"error012"<<endl;
-        expect(EQUAL);
-        cout<<"error013"<<endl;
-        parsePolynomial_body();
-        expect(SEMICOLON);
-        cout<<"10"<<endl;
-}
-
-void Parser::parsePolynomial_header()
-{
-    cout<<"11"<<endl;
-    parsePolynomial_name();
-    Token t = peek();
-    if(t.token_type == LPAREN)
-    {
-        cout<<"error0"<<endl;
-            t = lexer.GetToken();
-            parseId_list();
-            expect(RPAREN);
-        cout<<"error1"<<endl;
-    }
-    else
-    {
-        cout<<"error0"<<endl;
-        return;
-    }
-    cout<<"12"<<endl;
-}
-
-void Parser::parseId_list()
-{
-    cout<<"13"<<endl;
-    expect(ID);
-    Token t = peek();
     if(t.token_type == COMMA)
     {
-        t = lexer.GetToken();
-        parseId_list();
+        lexer.GetToken();
+        id_list();
     }
-    else
+
+
+}
+//believed to be complete
+struct InstructionNode* Parser::body()
+{
+    struct InstructionNode* instl ;
+
+    Token t= lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != LBRACE)
     {
-        return;
+        cout<<"Syntax error 6"<<endl;
+        return 0;
     }
-    cout<<"14"<<endl;
+
+    lexer.GetToken();
+    instl = stmt_list();
+    lexer.GetToken();
+
+    return instl;
+
 }
 
-void Parser::parsePolynomial_name()
+//need to append the data structures before returning
+struct InstructionNode* Parser::stmt_list()
 {
-    cout<<"15"<<endl;
-    expect(ID);
-    cout<<"16"<<endl;
-}
+    struct InstructionNode *inst1;
+    struct InstructionNode *inst2;
 
-void Parser::parsePolynomial_body()
-{
-    cout<<"17"<<endl;
-    parseTerm_list();
-    cout<<"18"<<endl;
-}
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
 
-void Parser::parseTerm_list()
-{
-    cout<<"19"<<endl;
-    parseTerm();
-    Token t = peek();
-    if(t.token_type == PLUS || t.token_type == MINUS)
+    //verify output & input term 
+    if(t0.token_type != ID && t0.token_type != WHILE && t0.token_type !=
+    IF && t0.token_type != SWITCH && t0.token_type != FOR && t0.token_type != OUTPUT
+    && t0.token_type != INPUT)
     {
-        parseAdd_operator();
-        t = peek();
-        if(t.token_type == NUM || t.token_type == ID)
+        cout<<"Syntax error 7"<<endl;
+        return 0;
+    }
+
+    inst1 = stmt();
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    //verify output & input term 
+    if(t.token_type == ID || t.token_type == WHILE || t.token_type ==
+    IF || t.token_type == SWITCH || t.token_type == FOR || t.token_type == OUTPUT
+    || t.token_type == INPUT)
+    {
+        ///////////////////////////
+        //need to append inst1 to inst
+        inst2 = stmt_list();
+
+        struct InstructionNode * temp = inst1;
+        while(temp->next != NULL)
         {
-        parseTerm_list();
+            temp = temp->next;
         }
-        else
-        {
-            syntax_error();
-        }
+        temp->next  = inst2;
+        //////////////////////////
+        return inst1;
     }
-    else
+    else if(t.token_type == RBRACE)
     {
-        return;
+        //cout<<"single"<<endl;
+        return inst1;
     }
-    cout<<"20"<<endl;
+
 }
 
-void Parser::parseTerm()
+
+//has not been worked on but struct return
+//type declared
+struct InstructionNode* Parser::stmt()
 {
-    cout<<"21"<<endl;
-    Token t = peek();
+    InstructionNode * inst;
+
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+
+    //verify output & input term 
+    if(t0.token_type != ID && t0.token_type != WHILE && t0.token_type != IF 
+    && t0.token_type != SWITCH && t0.token_type != FOR && t0.token_type != OUTPUT 
+    && t0.token_type != INPUT)
+    {
+        cout<<"Syntax error 8"<<endl;
+        return 0;
+    }
+
+
+
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    //verify output & input term 
     if(t.token_type == ID)
     {
-        parseMonomial_list();
+        //cout<<t.lexeme<<"here"<<endl;
+        inst = assign_stmt();
+        return inst;
+    }
+    else if(t.token_type == WHILE)
+    {
+        //not complete modification
+        inst = while_stmt(); //need to be finalized otherwise error 
+
+        return inst;
+
+    }
+    else if(t.token_type == IF)
+    {
+
+        //not complete modification
+        inst = if_stmt(); //need to be finalized otherwise error
+
+        return inst;
+
+    }
+    else if(t.token_type == SWITCH)
+    {
+        //cout<<t.lexeme<<endl;
+        inst = switch_stmt();
+
+
+        return inst;
+    }
+    else if(t.token_type == FOR)
+    {
+        //not complete modification
+        inst = for_stmt(); //need to be finalized otherwise error
+        return inst;
+    }
+    else if(t.token_type == OUTPUT)
+    {
+        inst = output_stmt();
+        return inst;
+    }
+    else if(t.token_type == INPUT)
+    {
+        inst = input_stmt();
+        return inst;
+    }
+
+   
+
+
+
+}
+////////////////////////////////////
+
+
+//the data structure deed more design analysis
+struct InstructionNode* Parser::assign_stmt()
+{
+    InstructionNode *assign = new InstructionNode();
+    assign->type = ASSIGN;
+    assign->next = NULL;
+
+    Token t0= lexer.GetToken();
+    Token t1= lexer.GetToken();
+    lexer.UngetToken(t1);
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID && t1.token_type != EQUAL)
+    {
+        cout<<"Syntax error 9"<<endl;
+        return 0;
+    }
+
+    Token z = lexer.GetToken();
+    assign->assign_inst.left_hand_side_index = symbolTable[z.lexeme];
+    lexer.GetToken();
+    Token t = lexer.GetToken();
+    Token k = lexer.GetToken();
+    lexer.UngetToken(k);
+    lexer.UngetToken(t);
+
+    if(k.token_type == PLUS || k.token_type == MINUS || k.token_type == MULT
+    || k.token_type == DIV)
+    {
+        expr(assign);
+    }
+    else
+    {
+        
+        assign->assign_inst.operand1_index = primary();
+        assign->assign_inst.op = OPERATOR_NONE;
+    }
+    lexer.GetToken();
+
+    return assign;
+}
+
+int Parser::expr(struct InstructionNode *assign)
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID && t0.token_type != NUM)
+    {
+        cout<<"Syntax error 10"<<endl;
+        return 0;
+    }
+
+    assign->assign_inst.operand1_index = primary();
+    assign->assign_inst.op = op();
+    assign->assign_inst.operand2_index = primary();
+
+    Token t1= lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != SEMICOLON)
+    {
+        cout<<"Syntax error 11"<<endl;
+        return 0;
+    }
+}
+
+int Parser::primary()
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID && t0.token_type != NUM)
+    {
+        cout<<"Syntax error 12"<<endl;
+        return 0;
+    }
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type == ID)
+    {
+       Token z = lexer.GetToken();
+       return symbolTable[z.lexeme];
+
     }
     else if(t.token_type == NUM)
     {
-        parseCoefficient();
-        t = peek();
-        if(t.token_type == ID)
-        {
-            parseMonomial_list();
-        }
-        else
-        {
-            return;
-        }
+        Token z2 = lexer.GetToken();
+
+        //allocates memory to numbers without variables
+        mem[next_available] = stoi(z2.lexeme);
+        int location = next_available;
+
+        //increments the memory counter
+        next_available++;
+        return location;
+   
+    }
+////////////////////////////////////////////////////////////////////
+
+}
+
+ArithmeticOperatorType Parser::op()
+{
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type == PLUS)
+    {
+        lexer.GetToken();
+        return OPERATOR_PLUS;
+    }
+    else if(t.token_type == MINUS)
+    {
+        lexer.GetToken();
+        return OPERATOR_MINUS;
+    }
+    else if (t.token_type == MULT)
+    {
+        lexer.GetToken();
+        return OPERATOR_MULT;
+    }
+    else if(t.token_type == DIV)
+    {
+        lexer.GetToken();
+        return OPERATOR_DIV;
     }
     else
     {
-        syntax_error();
+        cout<<"Syntax error 13"<<endl;
     }
-    cout<<"22"<<endl;
+
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID && t0.token_type != NUM)
+    {
+        cout<<"Syntax error 14"<<endl;
+    }
 }
 
-void Parser::parseMonomial_list()
+struct InstructionNode* Parser::output_stmt()
 {
-    cout<<"23"<<endl;
-    parseMonomial();
-    Token t = peek();
-    if(t.token_type == ID)
+    InstructionNode *output = new InstructionNode();
+    output->type = OUT;
+    output->next = NULL;
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    //verify output term 
+    if(t.token_type == OUTPUT)
     {
-        parseMonomial_list();
+        //cout<<t.lexeme<<"second"<<endl;
+        lexer.GetToken();
+        Token z = lexer.GetToken();
+        output->output_inst.var_index = symbolTable[z.lexeme];
+
+        lexer.GetToken();
     }
     else
     {
-        return;
+        cout<<"Syntax error 15"<<endl;
     }
-    cout<<"24"<<endl;
+
+    return output;
 }
 
-void Parser::parseMonomial()
+struct InstructionNode* Parser::input_stmt()
 {
-    cout<<"25"<<endl;
-    expect(ID);
-    cout<<"jj"<<endl;
-    Token t = peek();
-    if(t.token_type == POWER)
-    {
-        parseExponent();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"26"<<endl;
-}
+    //create node
+    InstructionNode *inputStruct = new InstructionNode();
 
-void Parser::parseExponent()
-{
-    cout<<"27"<<endl;
-    expect(POWER);
-    expect(NUM);
-    cout<<"28"<<endl;
-}
+    //assing struct type
+    inputStruct->type = IN;
+    inputStruct->next = NULL;
 
-void Parser::parseAdd_operator()
-{
-    cout<<"29"<<endl;
-    Token t = peek();
-    if(t.token_type == PLUS || t.token_type == MINUS)
-    {
-        t = lexer.GetToken();
-    }
-    else
-    {
-        syntax_error();
-    }
-    cout<<"30"<<endl;
-}
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
 
-void Parser::parseCoefficient()
-{
-    cout<<"31"<<endl;
-    expect(NUM);
-    cout<<"32"<<endl;
-}
-
-void Parser::parseStart()
-{
-    cout<<"33"<<endl;
-    expect(START);
-    parseStatement_list();
-    cout<<"34"<<endl;
-}
-
-void Parser::parseStatement_list()
-{
-    cout<<"35"<<endl;
-    parseStatement();
-    Token t = peek();
-    if(t.token_type == ID || t.token_type == INPUT)
-    {
-        parseStatement_list();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"36"<<endl;
-}
-
-void Parser::parseStatement()
-{
-    cout<<"37"<<endl;
-    Token t = peek();
+    //verify input term 
     if(t.token_type == INPUT)
     {
-        cout<<"37A"<<endl;
-        parseInput_statement();
-    }
-    else if(t.token_type == ID)
-    {
-        cout<<"37B"<<endl;
-        parsePoly_evaluation_statement();
+        //cout<<t.lexeme<<"zero"<<endl;
+        lexer.GetToken();
+        Token z =lexer.GetToken();
+
+        //assign index of variable
+        //need to pop values from the input vector and method
+        inputStruct->input_inst.var_index = symbolTable[z.lexeme];
+
+        lexer.GetToken();
     }
     else
     {
-        cout<<"37C"<<endl;
-        syntax_error();
+        cout<<"Syntax error 16"<<endl;
+        return 0;
     }
-    cout<<"38"<<endl;
+
+    return inputStruct;
 }
 
-void Parser::parsePoly_evaluation_statement()
+//needs jump conditions
+struct InstructionNode* Parser::while_stmt()
 {
-    cout<<"39"<<endl;
-    parsePolynomial_evaluation();
-    expect(SEMICOLON);
-    cout<<"40"<<endl;
-}
+    //need to finalize but mostly correct
+    InstructionNode * inst = new InstructionNode();
+    InstructionNode * empty = new InstructionNode();
+    InstructionNode * jump = new InstructionNode();
 
-void Parser::parseInput_statement()
-{
-    cout<<"41"<<endl;
-    expect(INPUT);
+    empty->type = NOOP;
+    jump->type = JMP;
+    inst->type = CJMP;
 
-//variable memory allocation
-    Token t = peek();
+    empty->next = NULL;
 
-    bool variableExists = false;
-
-    for(auto begin : symbolTable)
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type == WHILE)
     {
-        if(begin.variable == t.lexeme)
+        lexer.GetToken();
+        condition(inst);
+        inst->next = body();
+        jump->jmp_inst.target = inst;
+
+        struct InstructionNode* temp = inst;
+        while(temp->next != NULL)
         {
-            variableExists = true;
-            break;
+            temp = temp->next;
         }
-    } 
 
-    if(!variableExists)
-    {
+        temp->next = jump;
+        temp->next->next = empty;
+        jump->next = empty;
+        
+        inst->cjmp_inst.target = empty;
 
-     table->variable = t.lexeme;
-     table->tableIndex = next_available;
-     symbolTable.push_back(*table);
-     memory.push_back(0);
-     next_available++;
 
-    }
+        return inst;
 
-//continues normal parser operations
-    expect(ID);
-    expect(SEMICOLON);
-    cout<<"42"<<endl;
-}
-
-void Parser::parsePolynomial_evaluation()
-{
-    cout<<"43"<<endl;
-    parsePolynomial_name();
-    expect(LPAREN);
-    parseArgument_list();
-    expect(RPAREN);
-    cout<<"44"<<endl;
-}
-
-void Parser::parseArgument_list()
-{
-    cout<<"45"<<endl;
-    parseArgument();
-    Token t = peek();
-    if(t.token_type == COMMA)
-    {
-        t = lexer.GetToken();
-        parseArgument_list();           
     }
     else
     {
-        return;
+        cout<<"Syntax error 17"<<endl;
     }
-    cout<<"46"<<endl;
+
+    
 }
 
-void Parser::parseArgument()
+//needs cjmp and jmp instructions
+struct InstructionNode* Parser:: if_stmt()
 {
-    cout<<"47"<<endl;
-    Token t = peek();
-    if(t.token_type == NUM || t.token_type == ID)
+    InstructionNode* inst = new InstructionNode();
+    InstructionNode* empty = new InstructionNode();
+    empty->type = NOOP;
+    empty->next = NULL; 
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type == IF)
     {
-        t = lexer.GetToken();
+        inst->type = CJMP;
+        lexer.GetToken();
+        condition(inst);
+        inst->next = body(); 
+        inst->cjmp_inst.target = empty;
+
+        struct InstructionNode* temp = inst;
+        while(temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+
+        temp->next = empty;
+
     }
-    else 
+    else
     {
-        parsePolynomial_evaluation();
+        cout<<"Syntax error 18"<<endl;
     }
-    cout<<"48"<<endl;
+
+    return inst;
+
 }
 
-int main()
+int Parser::condition(struct InstructionNode* inst)
 {
-    Parser parse;
-    parse.parseInput();
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != ID && t0.token_type != NUM)
+    {
+        cout<<"Syntax error 19"<<endl;
+        return 0;
+    }
 
+    inst->cjmp_inst.operand1_index = primary();
+
+    relop(inst);
+    inst->cjmp_inst.operand2_index = primary();
+
+
+    Token t1= lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != LBRACE && t1.token_type != SEMICOLON)
+    {
+        cout<<"Syntax error 20"<<endl;
+        return 0;
+    }
+}
+
+int Parser::relop(struct InstructionNode* inst)
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != GREATER && t0.token_type != LESS && t0.token_type != NOTEQUAL)
+    {
+        cout<<"Syntax error 21"<<endl;
+        return 0;
+    }
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    if(t.token_type == GREATER)
+    {
+        inst->cjmp_inst.condition_op = CONDITION_GREATER;
+        lexer.GetToken();
+        
+    }
+    else if(t.token_type == LESS)
+    {
+        inst->cjmp_inst.condition_op = CONDITION_LESS;
+        lexer.GetToken();
+
+    }
+    else if(t.token_type == NOTEQUAL)
+    {
+        inst->cjmp_inst.condition_op = CONDITION_NOTEQUAL;
+        lexer.GetToken();
+
+    }
+
+    Token t1= lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != ID && t1.token_type != NUM)
+    {
+        cout<<"Syntax error 22"<<endl;
+        return 0;
+    }
+}
+
+struct InstructionNode* Parser::switch_stmt()
+{
+    InstructionNode * inst; //node
+    InstructionNode * empty = new InstructionNode();
+    empty->type = NOOP;
+    empty->next = NULL;
+
+
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != SWITCH)
+    {
+        cout<<"Syntax error 23"<<endl;
+        return 0;
+    }
+
+    lexer.GetToken();
+
+    //ID
+    Token z = lexer.GetToken();
+
+    //cout<<"print"<<endl;
+
+    lexer.GetToken();
+    inst = case_list(z, empty);
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    //cout<<"outside"<<endl;
+    if(t.token_type == DEFAULT)
+    {
+
+        //cout<<CJMP<<endl;
+        struct InstructionNode* temp = inst;
+        while(temp->next != NULL)
+        {
+            //cout<<temp->type<<endl;
+            temp = temp->next;
+        }
+        //concatenates default with noop
+        temp->next = default_case(empty);
+
+    }
+    else
+    {
+        struct InstructionNode* temp = inst;
+        while(temp->next != NULL)
+        {
+            //cout<<temp->type<<endl;
+            temp = temp->next;
+        }
+        //concatenates default with noop
+        temp->next = empty;
+    }
+    
+    
+    
+    lexer.GetToken();
+
+    return inst;   //return node
+}
+
+struct InstructionNode* Parser::for_stmt()
+{
+    struct InstructionNode* inst = new InstructionNode();
+    struct InstructionNode* empty = new InstructionNode();
+    struct InstructionNode* jump = new InstructionNode();
+    
+    empty->type = NOOP;
+    jump->type = JMP;
+    inst->type = CJMP;
+
+    empty->next = NULL;
+
+
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != FOR)
+    {
+        cout<<"Syntax error 24"<<endl;
+    }
+
+    lexer.GetToken();
+    lexer.GetToken();
+    struct InstructionNode* start;
+    start = assign_stmt();
+    start->next = inst;
+    condition(inst);
+    lexer.GetToken();
+
+    struct InstructionNode* updateValues;
+    updateValues = assign_stmt();
+
+    lexer.GetToken();
+    inst->next = body();
+    jump->jmp_inst.target = inst;
+
+    
+
+    struct InstructionNode* temp = inst;
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    temp->next = updateValues;
+    temp->next->next = jump;
+    temp->next->next->next = empty;
+    jump->next = empty;
+
+    inst->cjmp_inst.target = empty;
+
+    return start;
+}
+
+
+struct InstructionNode* Parser::case_list(Token z, struct InstructionNode* empty)
+{
+    struct InstructionNode* inst1;
+    struct InstructionNode* inst2;
+
+    inst1 = case_(z, empty);
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    if(t.token_type == CASE)
+    {
+        inst2 = case_list(z, empty);
+        
+        struct InstructionNode* temp = inst1;
+        while(temp->next != NULL)
+        {
+            //cout<<temp->type<<endl;
+            temp = temp->next;
+        }
+        temp->next = inst2;
+        return inst1;
+    }
+    else
+    {
+        return inst1;
+
+    }
+    
 
 }
+
+//error is guranteed to be here
+struct InstructionNode* Parser::case_(Token z, struct InstructionNode* exitNode)
+{
+
+    //format as an if statement otherwise wrong
+    InstructionNode* inst= new InstructionNode();
+    InstructionNode* empty = new InstructionNode();
+    InstructionNode* jump = new InstructionNode();
+
+    jump->type = JMP;
+    jump->jmp_inst.target = exitNode ;
+    jump->next = NULL;
+
+    empty->type = NOOP;
+    empty->next = NULL;
+
+    inst->type = CJMP;
+    inst->cjmp_inst.operand1_index = symbolTable[z.lexeme];
+
+
+    inst->cjmp_inst.condition_op = CONDITION_NOTEQUAL;
+
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != CASE)
+    {
+        cout<<"Syntax error 26"<<endl;
+        return 0;
+    }
+
+    lexer.GetToken();
+    //NUM type
+    Token z1 = lexer.GetToken();
+    mem[next_available] = stoi(z1.lexeme);
+    inst->cjmp_inst.operand2_index = next_available;
+    next_available++;
+    
+    /*
+    NOOP Statement noop1;
+
+
+    start of switch
+    if statement if1
+       body
+       GOTO noop1
+    Noop2
+    if statement if2
+       body
+       GOTO noop1
+    Noop3
+    Noop1
+    
+    
+    
+    
+    */
+
+
+    //create jump to point to end
+    lexer.GetToken();    
+    
+    
+    struct InstructionNode* address = body();
+    struct InstructionNode* temp0 = address;
+
+    while(temp0->next != NULL)
+    {
+        //cout<<temp->type<<endl;
+        temp0 = temp0->next;
+    }
+
+    temp0->next= jump;
+    //inst->cjmp_inst.target = body();
+    
+    inst->next = temp0->next->next;
+    inst->cjmp_inst.target = address;
+
+    ///////////////////////////////////////////////////////////////
+    struct InstructionNode* temp = inst;
+
+    while(temp->next != NULL)
+    {
+        //cout<<temp->type<<endl;
+        temp = temp->next;
+    }
+
+    temp->next = empty;
+
+    return inst;
+    
+}
+
+struct InstructionNode* Parser::default_case(struct InstructionNode* empty)
+{
+    InstructionNode * inst;
+    
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != DEFAULT)
+    {
+        cout<<"Syntax error 27"<<endl;
+        return 0;
+    }
+
+    //cout<<"default"<<endl;
+    lexer.GetToken();
+    lexer.GetToken();
+    inst = body();
+
+    struct InstructionNode* temp = inst;
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+    
+    temp->next = empty;
+
+    Token t1= lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != RBRACE)
+    {
+        cout<<"Syntax error 28"<<endl;
+        return 0;
+    }
+
+    return inst;
+
+}
+
+
+
+int Parser::parse_inputs()
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != NUM)
+    {
+        cout<<"Syntax error 29"<<endl;
+        return 0;
+    }
+
+    num_list();
+}
+
+//this is wehere input numbers are parsed
+//for example, 1 2 3 4 5 used as input a(variable)
+int Parser::num_list()
+{
+    Token t0= lexer.GetToken();
+    lexer.UngetToken(t0);
+    if(t0.token_type != NUM)
+    {
+        cout<<"Syntax error 30"<<endl;
+        return 0;
+    }
+
+    Token input = lexer.GetToken();
+
+    //pushes back inputs in order into a vector
+    //and converts the string to int type for the list
+    inputs.push_back(stoi(input.lexeme));
+
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+
+    if(t.token_type == NUM)
+    {
+        num_list();
+    }
+
+}
+
+

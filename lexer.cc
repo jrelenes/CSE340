@@ -1,6 +1,6 @@
 /*
- * Copyright (C) Rida Bazzi, 2019
- *           (C) Raha Moraffah 2018
+ * Copyright (C) Rida Bazzi, 2017
+ *
  * Do not share this file with anyone
  */
 #include <iostream>
@@ -15,12 +15,16 @@
 using namespace std;
 
 string reserved[] = { "END_OF_FILE",
-    "POLY", "START", "INPUT", "EQUAL", "LPAREN",
-    "RPAREN", "ID", "COMMA", "POWER", "NUM",
-    "PLUS", "MINUS", "SEMICOLON", "ERROR"};
+    "VAR", "FOR", "IF", "WHILE", "SWITCH", "CASE", "DEFAULT", "INPUT", "OUTPUT", "ARRAY",
+    "PLUS", "MINUS", "DIV", "MULT",
+    "EQUAL", "COLON", "COMMA", "SEMICOLON",
+    "LBRAC", "RBRAC", "LPAREN", "RPAREN", "LBRACE", "RBRACE",
+    "NOTEQUAL", "GREATER", "LESS",
+    "NUM", "ID", "ERROR"
+};
 
-#define KEYWORDS_COUNT 3
-string keyword[] = { "POLY", "START", "INPUT"};
+#define KEYWORDS_COUNT 9
+string keyword[] = { "VAR", "FOR", "IF", "WHILE", "SWITCH", "CASE", "DEFAULT", "input", "output", "ARRAY" };
 
 void Token::Print()
 {
@@ -80,7 +84,7 @@ TokenType LexicalAnalyzer::FindKeywordIndex(string s)
 Token LexicalAnalyzer::ScanNumber()
 {
     char c;
-    
+
     input.GetChar(c);
     if (isdigit(c)) {
         if (c == '0') {
@@ -109,12 +113,11 @@ Token LexicalAnalyzer::ScanNumber()
     }
 }
 
-
 Token LexicalAnalyzer::ScanIdOrKeyword()
 {
     char c;
     input.GetChar(c);
-    
+
     if (isalpha(c)) {
         tmp.lexeme = "";
         while (!input.EndOfInput() && isalnum(c)) {
@@ -138,7 +141,6 @@ Token LexicalAnalyzer::ScanIdOrKeyword()
     }
     return tmp;
 }
-
 
 // you should unget tokens in the reverse order in which they
 // are obtained. If you execute
@@ -178,21 +180,34 @@ Token LexicalAnalyzer::GetToken()
     SkipSpace();
     tmp.lexeme = "";
     tmp.line_no = line_no;
-    tmp.token_type = END_OF_FILE;
-    if (!input.EndOfInput())
-        input.GetChar(c);
-    else
-        return tmp;
-
+    input.GetChar(c);
     switch (c) {
-        case ';': tmp.token_type = SEMICOLON; return tmp;
-        case '^': tmp.token_type = POWER;     return tmp;
-        case '-': tmp.token_type = MINUS;     return tmp;
-        case '+': tmp.token_type = PLUS;      return tmp;
-        case '=': tmp.token_type = EQUAL;     return tmp;
-        case '(': tmp.token_type = LPAREN;    return tmp;
-        case ')': tmp.token_type = RPAREN;    return tmp;
-        case ',': tmp.token_type = COMMA;     return tmp;
+        case '+':   tmp.token_type = PLUS;      return tmp;
+        case '-':   tmp.token_type = MINUS;     return tmp;
+        case '/':   tmp.token_type = DIV;       return tmp;
+        case '*':   tmp.token_type = MULT;      return tmp;
+        case '=':   tmp.token_type = EQUAL;     return tmp;
+        case ':':   tmp.token_type = COLON;     return tmp;
+        case ',':   tmp.token_type = COMMA;     return tmp;
+        case ';':   tmp.token_type = SEMICOLON; return tmp;
+        case '[':   tmp.token_type = LBRAC;     return tmp;
+        case ']':   tmp.token_type = RBRAC;     return tmp;
+        case '(':   tmp.token_type = LPAREN;    return tmp;
+        case ')':   tmp.token_type = RPAREN;    return tmp;
+        case '{':   tmp.token_type = LBRACE;    return tmp;
+        case '}':   tmp.token_type = RBRACE;    return tmp;
+        case '>':   tmp.token_type = GREATER;   return tmp;
+        case '<':
+            input.GetChar(c);
+            if (c == '>') {
+                tmp.token_type = NOTEQUAL;
+            } else {
+                if (!input.EndOfInput()) {
+                    input.UngetChar(c);
+                }
+                tmp.token_type = LESS;
+            }
+            return tmp;
         default:
             if (isdigit(c)) {
                 input.UngetChar(c);
@@ -204,7 +219,7 @@ Token LexicalAnalyzer::GetToken()
                 tmp.token_type = END_OF_FILE;
             else
                 tmp.token_type = ERROR;
-            
+
             return tmp;
     }
 }

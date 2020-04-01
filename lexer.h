@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Rida Bazzi, 2019
+ * Copyright (C) Rida Bazzi, 2017
  *
  * Do not share this file with anyone
  */
@@ -14,10 +14,13 @@
 // ------- token types -------------------
 
 typedef enum { END_OF_FILE = 0,
-    POLY, START, INPUT, EQUAL, LPAREN,
-    RPAREN, ID, COMMA, POWER, NUM,
-    PLUS, MINUS, SEMICOLON, ERROR
-    } TokenType;
+    VAR, FOR, IF, WHILE, SWITCH, CASE, DEFAULT, INPUT, OUTPUT, ARRAY,
+    PLUS, MINUS, DIV, MULT,
+    EQUAL, COLON, COMMA, SEMICOLON,
+    LBRAC, RBRAC, LPAREN, RPAREN, LBRACE, RBRACE,
+    NOTEQUAL, GREATER, LESS,
+    NUM, ID, ERROR
+} TokenType;
 
 class Token {
   public:
@@ -43,8 +46,8 @@ class LexicalAnalyzer {
     bool SkipSpace();
     bool IsKeyword(std::string);
     TokenType FindKeywordIndex(std::string);
-    Token ScanNumber();
     Token ScanIdOrKeyword();
+    Token ScanNumber();
 };
 
 #endif  //__LEXER__H__

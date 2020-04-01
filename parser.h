@@ -1,15 +1,13 @@
-/*
- * Copyright (C) Rida Bazzi, 2019
- *
- * Do not share this file with anyone
- */
-#ifndef __PARSER_H__
-#define __PARSER_H__
-
-#include <string>
+#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <string.h>
+#include "compiler.h"
+#include <iostream>
 #include "lexer.h"
-#include <vector>
-#include <deque>
+#include <map>
 using namespace std;
 
 class Parser {
@@ -20,52 +18,31 @@ class Parser {
     Token expect(TokenType expected_type);
     Token peek(); //get unget
   public:
-    void parseInput();
-    void parseProgram();
-    void parseInputs();
-    void parsePoly_decl_section();
-    void parseStart();
-    void parsePoly_decl();
-    void parsePolynomial_header();
-    void parsePolynomial_body();
-    void parsePolynomial_name();
-    void parseId_list();
-    void parseTerm_list();
-    void parseTerm();
-    void parseAdd_operator();
-    void parseMonomial_list();
-    void parseCoefficient();
-    void parseMonomial();
-    void parseExponent();
-    void parseStatement_list();
-    void parseStatement();
-    void parseInput_statement();
-    void parsePoly_evaluation_statement();
-    void parsePolynomial_evaluation();
-    void parseArgument_list();
-    void parseArgument();
+
+    struct InstructionNode* program();
+    int var_section();
+    int id_list();
+    struct InstructionNode* body();
+    struct InstructionNode* stmt_list();
+    struct InstructionNode* stmt();
+    struct InstructionNode* assign_stmt();
+    int expr(struct InstructionNode*);
+    int primary();
+    ArithmeticOperatorType op();
+    struct InstructionNode* output_stmt();
+    struct InstructionNode* input_stmt();
+    struct InstructionNode* while_stmt();
+    struct InstructionNode* if_stmt();
+    int condition(struct InstructionNode*);
+    int relop(struct InstructionNode*);
+    struct InstructionNode* switch_stmt();
+    struct InstructionNode* for_stmt();
+    struct InstructionNode* case_list(Token, struct InstructionNode*);
+    struct InstructionNode* case_(Token, struct InstructionNode*);
+    struct InstructionNode* default_case(struct InstructionNode*);
+    int parse_inputs();
+    int num_list();
+
 
 };
-
-
-//UNDER CONSTRUCTION
-    struct symbolTableN
-    {
-      string variable;
-      int tableIndex;
-      
-    };
-
-    vector<struct symbolTableN> symbolTable;
-    
-    //stores values of variables
-    vector<int> memory;
-//*********************
-
-//stores variable inputs
-deque<int> variableInputs;
-
-
-
-#endif
 

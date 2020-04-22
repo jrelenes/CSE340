@@ -1,0 +1,19 @@
+{
+	a1, b : INT;
+	d1 : BOOLEAN;
+	d1= TRUE;
+	a1 = 1;
+	b = 3;
+	{
+		d2 : INT;
+		WHILE(d1)
+		{
+			b= 2;
+		}
+	}
+
+	d2 : REAL; 
+	d2 = 3.1;
+	
+
+}

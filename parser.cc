@@ -1,440 +1,1391 @@
-/*
- * Copyright (C) Rida Bazzi, 2020
- *
- * Do not share this file with anyone
- *
- * Do not post this file or derivatives of
- * of this file online
- *
- */
-#include <iostream>
 #include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <string.h>
+#include <iostream>
 #include "parser.h"
-
+#include <map>
 using namespace std;
 
-//UNDER CONSTRUCTION
-int next_available = 0; //memory counter
-symbolTableN* table = new symbolTableN(); // 
-//*********************
+int next_available = 0;
+int prio = 0;
 
-void Parser::syntax_error()
-{
-    cout << "SYNTAX ERROR !!!\n";
-    exit(1);
-}
+//uninitialized variables
+UNINITIALIZED* uninitialized = new UNINITIALIZED();
 
-// this function gets a token and checks if it is
-// of the expected typlse. If it is, the token is
-// returned, otherwise, synatx_error() is generated
-// this function is particularly useful to match
-// terminals in a right hand side of a rule.
-// Written by Mohsen Zohrevandi
-Token Parser::expect(TokenType expected_type)
+//type checking
+TYPE* type_eval = new TYPE();
+
+//variables
+Variables* var_types = new Variables();
+
+//error codes
+Error* errorCode = new Error();
+
+//scope version
+int version = 0;
+
+
+
+
+
+/*
+FIRST(program) = {LBRACE}
+FIRST(scope) = {LBRACE}
+FIRST(scope_list) = {LBRACE, ID, WHILE}
+FIRST(var_decl) = {ID}
+FIRST(id_list) = {ID}
+FIRST(type_name) = {REAL, INT, BOOLEAN, STRING}
+FIRST(stmt_list) = {ID, WHILE}
+FIRST(stmt) = {ID, WHILE}
+FIRST(assign_stmt) = {ID}
+FIRST(while_stmt) = {WHILE}
+FIRST(expr) = {}
+FIRST(arithmetic_expr) = {PLUS, MINUS, MULT, DIV, ID, NUM, REALNUM, STRING_CONSTANT}
+FIRST(boolean_expr) = {AND, OR, XOR, GREATER, GTEQ, LESS, NOTEQUAL, LTEQ, NOT, ID, TRUE, FALSE}
+FIRST(arithmetic_operator) = {PLUS, MINUS, MULT, DIV}
+FIRST(binary_boolean_operator) = {AND, OR, XOR}
+FIRST(relational_operator) = {GREATER, GTEQ, LESS, NOTEQUAL, LTEQ}
+FIRST(primary) = {ID, NUM, REALNUM, STRING_CONSTANT, TRUE, FALSE}
+FIRST(arithmetic_primary) = {ID, NUM, REALNUM, STRING_CONSTANT}
+FIRST(boolean_primary) = {ID, TRUE, FALSE}
+FIRST(bool_const) = {TRUE, FALSE}
+FIRST(condition) = {}
+
+
+
+FOLLOW(program) = {$}
+FOLLOW(scope) = {LBRACE, RBRACE ID, WHILE, $}
+FOLLOW(scope_list) = {RBRACE, $}
+FOLLOW(var_decl) = { LBRACE, ID, WHILE, $}
+FOLLOW(id_list) = {COLON, $}
+FOLLOW(type_name) = {SEMICOLON}
+FOLLOW(stmt_list) = {RBRACE, $}
+FOLLOW(stmt) = {ID, WHILE, $}
+FOLLOW(assign_stmt) = {$}
+FOLLOW(while_stmt) = {$}
+FOLLOW(expr) = {SEMICOLON, $}
+FOLLOW(arithmetic_expr) = {PLUS, MINUS, MULT, DIV, ID, NUM, REALNUM, STRING_CONSTANT, $}
+FOLLOW(boolean_expr) = {AND, OR, XOR, GREATER, GTEQ, LESS, NOTEQUAL, LTEQ, NOT, ID, TRUE, FALSE, $}
+FOLLOW(arithmetic_operator) = {PLUS, MINUS, MULT, DIV, ID, NUM, REALNUM, STRING_CONSTANT}
+FOLLOW(binary_boolean_operator) = {AND, OR, XOR, GREATER, GTEQ, LESS, NOTEQUAL, LTEQ, NOT, ID, TRUE, FALSE}
+FOLLOW(relational_operator) = {PLUS, MINUS, MULT, DIV, ID, NUM, REALNUM, STRING_CONSTANT,
+AND, OR, XOR, GREATER, GTEQ, LESS, NOTEQUAL, LTEQ, NOT, ID, TRUE, FALSE}
+FOLLOW(primary) = {}
+FOLLOW(arithmetic_primary) = {$}
+FOLLOW(boolean_primary) = {$}
+FOLLOW(bool_const) = {$}
+FOLLOW(condition) = {ID, WHILE}
+*/
+
+
+
+void Parser::program()
 {
+
+    uninitialized->next = NULL;
+    type_eval->next=NULL;
+    var_types->next= NULL;
+    errorCode->next = NULL;
+
     Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type !=  LBRACE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 1"<<endl; 
+
+
+    }
+
+    string Level = "GLOBAL";
+    scope(Level);
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type !=  END_OF_FILE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 2"<<endl;
+
+    }
 
     
-    if (t.token_type != expected_type)
-        syntax_error();
-    return t;
+
+}
+
+void Parser::scope(string Level)
+{
+    Token t = lexer.GetToken();
+    if(t.token_type != LBRACE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 3"<<endl;
+
+    }
+    scope_list(Level);
+    Token t1 = lexer.GetToken();
+    if(t1.token_type != RBRACE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 4"<<endl;
+
+    }
+
+    ///////////////////////////
+
+
+    //////////////////////////
+
+
+
+}
+///error must fix
+void Parser::scope_list(string Level)
+{
+    Token t = lexer.GetToken();
+    Token k = lexer.GetToken();
+    lexer.UngetToken(k);
+    lexer.UngetToken(t);
+    if(t.token_type != LBRACE && t.token_type != ID && t.token_type != WHILE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 5"<<endl;
+
+    }
+
+
+
+    if(t.token_type == LBRACE)
+    {
+        //scope locations where they are increased
+        //at lower level and decreased after exiting
+        //scope
+        Level = "alpha" + to_string(version);
+        ScopeLevelCounter++;
+        scope(Level);
+        ScopeLevelCounter--;
+        version++;
+
+        Token j = lexer.GetToken();
+        lexer.UngetToken(j);   
+        if(j.token_type != RBRACE )
+        {
+            scope_list(Level);
+        }
+    }
+    else if(t.token_type == ID && (k.token_type == COMMA || k.token_type == COLON))
+    {
+        var_decl(Level);
+        Token j = lexer.GetToken();
+        lexer.UngetToken(j);   
+        if(j.token_type != RBRACE )
+        {
+            scope_list(Level);
+        }
+    }
+    else if(t.token_type == ID || t.token_type == WHILE)
+    {
+        stmt(Level);
+        Token j = lexer.GetToken();
+        lexer.UngetToken(j);   
+        if(j.token_type != RBRACE )
+        {
+            scope_list(Level);
+        }
+    }
+
+
 
 }
 
 
 
-// this function simply checks the next token without
-// consuming the input
-// Written by Mohsen Zohrevandi
-Token Parser::peek()
+
+
+void Parser::var_decl(string Level)
 {
     Token t = lexer.GetToken();
     lexer.UngetToken(t);
-    return t;
-}
-
-// Parsing
-
-void Parser::parseInput()
-{
-    cout<<"1"<<endl;
-    parseProgram();
-    parseInputs();
-    expect(END_OF_FILE);
-    cout<<"2"<<endl;
-}
-
-void Parser::parseProgram()
-{
-    cout<<"3"<<endl;
-    parsePoly_decl_section();
-    parseStart();
-    cout<<"4"<<endl;
-}
-/////////////////////////////////////////////////////////
-void Parser::parseInputs()
-{
-    cout<<"5"<<endl;
-
-    //stores variable values
-    Token t = peek();
-    if(t.token_type != EOF)
+    if(t.token_type != ID)
     {
-        variableInputs.push_back(atoi(t.lexeme));
+        SyntaxError();
+cout<<"Syntax Error 6"<<endl;
+
     }
+
+    Variables* tempV1 = new Variables();
+    Variables* tempV = var_types;
+
+    while(tempV->next != NULL)
+    {
+        tempV = tempV->next;
+    }
+
+    id_list(tempV1, Level);
+
+    Token t1 = lexer.GetToken();
+    if(t1.token_type != COLON)
+    {
+        SyntaxError();
+cout<<"Syntax Error 7"<<endl;
+
+    }
+    type_name(tempV1);
+    tempV1->LevelName = Level;
+    tempV1->next = NULL;
+    tempV->next = tempV1;
+
+    Token t2 = lexer.GetToken();
+    if(t2.token_type != SEMICOLON)
+    {
+        SyntaxError();
+cout<<"Syntax Error 8"<<endl;
+
+    }
+}
+
+void Parser::id_list(struct Variables *tempV1, string Level)
+{
     
-    //continues normal parsing
-    
-    expect(NUM);
-    t = peek();
-    if(t.token_type == NUM)
-    {
-        cout<<"5A"<<endl;
-    parseInputs();
-    }
-    else
-    {
-    return;
-    }  
-    cout<<"6"<<endl;
+    Token t = lexer.GetToken();
+//////////////////////////////
 
-    
-}
+    //////////////////
 
-void Parser::parsePoly_decl_section()
-{
-    cout<<"7"<<endl;
-    parsePoly_decl();
-    Token t = peek();
-    if(t.token_type == POLY)
+    bool eval = false;
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
     {
-        parsePoly_decl_section();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"8"<<endl;
-}
-
-void Parser::parsePoly_decl()
-{
-    cout<<"9"<<endl;
-        expect(POLY);
-        cout<<"error011"<<endl;
-        parsePolynomial_header();
-        cout<<"error012"<<endl;
-        expect(EQUAL);
-        cout<<"error013"<<endl;
-        parsePolynomial_body();
-        expect(SEMICOLON);
-        cout<<"10"<<endl;
-}
-
-void Parser::parsePolynomial_header()
-{
-    cout<<"11"<<endl;
-    parsePolynomial_name();
-    Token t = peek();
-    if(t.token_type == LPAREN)
-    {
-        cout<<"error0"<<endl;
-            t = lexer.GetToken();
-            parseId_list();
-            expect(RPAREN);
-        cout<<"error1"<<endl;
-    }
-    else
-    {
-        cout<<"error0"<<endl;
-        return;
-    }
-    cout<<"12"<<endl;
-}
-
-void Parser::parseId_list()
-{
-    cout<<"13"<<endl;
-    expect(ID);
-    Token t = peek();
-    if(t.token_type == COMMA)
-    {
-        t = lexer.GetToken();
-        parseId_list();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"14"<<endl;
-}
-
-void Parser::parsePolynomial_name()
-{
-    cout<<"15"<<endl;
-    expect(ID);
-    cout<<"16"<<endl;
-}
-
-void Parser::parsePolynomial_body()
-{
-    cout<<"17"<<endl;
-    parseTerm_list();
-    cout<<"18"<<endl;
-}
-
-void Parser::parseTerm_list()
-{
-    cout<<"19"<<endl;
-    parseTerm();
-    Token t = peek();
-    if(t.token_type == PLUS || t.token_type == MINUS)
-    {
-        parseAdd_operator();
-        t = peek();
-        if(t.token_type == NUM || t.token_type == ID)
+        if(!temp00->type.lexeme.empty())
         {
-        parseTerm_list();
+            for(auto k: temp00->variable)
+            {
+                if(k.first.lexeme == t.lexeme)
+                {
+                    eval = true;
+                }
+
+            }
+
+            if(temp00->ScopeLevel > ScopeLevelCounter)
+            {
+                eval = false;
+            }
+
+        }
+       temp00 = temp00->next;
+    }
+////////////////////////////////////////
+
+
+
+
+
+    Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    if(eval == true && printh == true)
+    {
+        printh = false;
+        //error 1.2
+        temp1->error_code = "1.1";
+        temp1->symbol_name = t.lexeme;
+        temp1->priority = ScopeLevelCounter;
+        temp1->next = NULL;
+        temp->next = temp1;
+        
+    }
+
+
+
+
+
+////////////////////
+
+
+    //memory declaration for variables
+    SymbolTable[t.lexeme] = next_available;
+    next_available++;
+
+    if(t.token_type != ID)
+    {
+        SyntaxError();
+cout<<"Syntax Error 9"<<endl;
+
+    }
+
+    tempV1->variable.push_back(make_pair(t,false));
+
+
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type == COMMA)
+    {
+        lexer.GetToken();
+        id_list(tempV1, Level);
+    }
+
+}
+
+void Parser::type_name(struct Variables *tempV1)
+{
+    Token t = lexer.GetToken();
+    if(t.token_type != REAL && t.token_type != INT && t.token_type != BOOLEAN && t.token_type != STRING)
+    {
+        SyntaxError();
+cout<<"Syntax Error 10"<<endl;
+
+    }
+    tempV1->type = t;
+    tempV1->ScopeLevel = ScopeLevelCounter;
+
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != SEMICOLON)
+    {
+        SyntaxError();
+cout<<"Syntax Error 11"<<endl;
+
+    }
+}
+
+void Parser::stmt_list(string Level)
+{
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != ID && t.token_type != WHILE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 12"<<endl;
+
+    }
+    stmt(Level);
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type == ID || t1.token_type == WHILE)
+    {
+        stmt_list(Level);
+    }
+}
+
+void Parser::stmt(string Level)
+{
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != ID && t.token_type != WHILE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 13"<<endl;
+
+    }
+    if(t.token_type == ID)
+    {
+        assign_stmt(Level);
+
+
+    }
+    else if(t.token_type == WHILE)
+    {
+        while_stmt(Level);
+    }
+}
+
+void Parser::assign_stmt(string Level)
+{
+    Token t = lexer.GetToken();
+
+    ////////////////////////////
+
+
+    //for the equal value not declaration
+    Variables* temp007 = var_types;
+        while(temp007 != NULL)
+        {
+            
+                for(auto k: temp007->variable)
+                {
+                    if(k.first.lexeme == t.lexeme && temp007->ScopeLevel >= ScopeLevelCounter)
+                    {
+                        k.second = true;
+                            
+                    }
+
+                }
+        temp007 = temp007->next;
+
+        }
+
+
+
+
+
+    /////////////////////////
+    bool eval = false;
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
+    {
+        if(!temp00->type.lexeme.empty())
+        {
+            for(auto k: temp00->variable)
+            {
+                if(k.first.lexeme == t.lexeme)
+                {
+                    eval = true;
+                    
+                }
+
+            }
+
+            if(temp00->ScopeLevel > ScopeLevelCounter)
+            {
+                eval = true;
+            }
+
+        }
+       temp00 = temp00->next;
+    }
+
+
+    Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    if(eval == false && printh == true)
+    {
+        printh = false;
+        //error 1.2
+        temp1->error_code = "1.2";
+        temp1->symbol_name = t.lexeme;
+        temp1->priority = ScopeLevelCounter;
+        temp1->next = NULL;
+        temp->next = temp1; 
+       
+    }
+    
+    
+
+    mem[SymbolTable[t.lexeme]] = "I";
+    Token t1 = lexer.GetToken();
+    if(t.token_type != ID && t1.token_type != EQUAL)
+    {
+       SyntaxError();
+cout<<"Syntax Error 14"<<endl;
+
+    }
+
+
+
+    expr(t, Level);
+    Token t2 = lexer.GetToken();
+    if(t2.token_type != SEMICOLON)
+    {
+        SyntaxError();
+cout<<"Syntax Error 15"<<endl;
+
+    }
+}
+
+
+void Parser::while_stmt(string Level)
+{
+    Token t = lexer.GetToken();
+    Token t1 = lexer.GetToken();
+    if(t.token_type != WHILE && t1.token_type != LPAREN)
+    {
+       SyntaxError();
+cout<<"Syntax Error 16"<<endl;
+
+    }
+        condition();
+
+    
+    Token t2 = lexer.GetToken();
+    Token t3 = lexer.GetToken();
+    lexer.UngetToken(t3);
+
+    if(t2.token_type != RPAREN)
+    {
+         SyntaxError();
+         cout<<"Syntax Error 17"<<endl;
+
+    }
+
+    if(t3.token_type == LBRACE)
+    {
+        lexer.GetToken();
+        stmt_list(Level);
+        Token t4 =lexer.GetToken();
+        if(t4.token_type != RBRACE)
+        {
+            SyntaxError();
+            cout<<"Syntax Error 18"<<endl;
+        }
+
+    }
+    else
+    {
+        stmt(Level);
+    }
+
+              
+
+}
+
+
+void Parser::expr(Token left_variable, string Level)
+{
+
+    Token t = lexer.GetToken();
+
+    lexer.UngetToken(t);
+    if(t.token_type != PLUS && t.token_type != MINUS && t.token_type != MULT && 
+    t.token_type != DIV && t.token_type != ID && t.token_type != NUM && t.token_type 
+    != REALNUM && t.token_type != STRING_CONSTANT && t.token_type != AND && t.token_type != XOR && t.token_type != GTEQ && 
+    t.token_type != LESS && t.token_type != NOTEQUAL && t.token_type != LTEQ && t.token_type 
+    != NOT && t.token_type != ID && t.token_type !=TRUE && t.token_type != FALSE)
+    {
+       SyntaxError();
+cout<<"Syntax Error 19"<<endl;
+
+    }
+    string left_variable1 = left_variable.lexeme;
+    //need remainder of grammar by professor
+    if(t.token_type == AND || t.token_type == XOR || t.token_type == GREATER||t.token_type == GTEQ || 
+    t.token_type == LESS || t.token_type == NOTEQUAL || t.token_type == LTEQ || t.token_type 
+    == NOT)
+    {
+               // cout<<"1"<<endl;
+
+        boolean_expr();
+    }
+    else if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || 
+    t.token_type == DIV)
+    {
+                //cout<<"2"<<endl;
+
+        arithmetic_expr();
+
+    }
+    else if(t.token_type == ID || t.token_type == NUM || t.token_type == REALNUM || 
+    t.token_type == STRING_CONSTANT || t.token_type == TRUE || t.token_type == FALSE)
+    {
+             //   cout<<"3"<<endl;
+
+        primary(Level, left_variable);
+    }
+
+    //cout<<left_variable.lexeme<<" "<<mem[SymbolTable[left_variable.lexeme]]<<endl;;
+
+}
+
+void Parser::arithmetic_expr()
+{
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != PLUS && t.token_type != MINUS && t.token_type != MULT && 
+    t.token_type != DIV && t.token_type != ID && t.token_type != NUM && t.token_type 
+    != REALNUM && t.token_type != STRING_CONSTANT)
+    {
+       SyntaxError();
+cout<<"Syntax Error 20"<<endl;
+
+    }
+
+        
+
+
+    if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || 
+    t.token_type == DIV)
+    {
+        arithmetic_operator();
+        arithmetic_expr();  //variable  //variable
+        arithmetic_expr();  //variable
+        
+
+    }
+
+
+    else if(t.token_type != ID || t.token_type != NUM || t.token_type != REALNUM || 
+    t.token_type != STRING_CONSTANT)
+    {
+        arithmetic_primary();
+        
+      
+    }
+    else
+    {
+        SyntaxError();
+cout<<"Syntax Error 21"<<endl;
+
+    }
+
+    
+
+}
+
+void Parser::boolean_expr()
+{
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != AND && t.token_type != XOR && t.token_type != GTEQ && t.token_type != GREATER &&
+    t.token_type != LESS && t.token_type != NOTEQUAL && t.token_type != LTEQ && t.token_type 
+    != NOT && t.token_type != ID && t.token_type !=TRUE && t.token_type != FALSE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 22"<<endl;
+
+    }
+    if(t.token_type == AND || t.token_type == OR || t.token_type == XOR)
+    {
+        //data structure with errors below to be added
+        binary_boolean_operator();
+        boolean_expr();
+        boolean_expr();
+    }
+    else if(t.token_type == GREATER || t.token_type == GTEQ || t.token_type == LESS || 
+    t.token_type == NOTEQUAL || t.token_type == LTEQ)
+    {
+        Token h = lexer.GetToken();
+        Token j = lexer.GetToken();
+        lexer.UngetToken(j);
+        lexer.UngetToken(h);
+
+        if(j.token_type == PLUS || j.token_type == MINUS || j.token_type == MULT || 
+    j.token_type == DIV || j.token_type == ID || j.token_type == NUM || j.token_type 
+    == REALNUM || j.token_type == STRING_CONSTANT)
+        {
+            relational_operator();
+            arithmetic_expr();
+            arithmetic_expr();
+        }//can go both ways
+        else if(j.token_type == AND || j.token_type == XOR || j.token_type == GTEQ || 
+    j.token_type == LESS || j.token_type == NOTEQUAL || j.token_type == LTEQ || j.token_type 
+    == NOT || j.token_type == ID || j.token_type ==TRUE || j.token_type == FALSE)
+        {
+            relational_operator();
+            boolean_expr();
+            boolean_expr();
         }
         else
         {
-            syntax_error();
+           SyntaxError();
+cout<<"Syntax Error 23"<<endl;
+
         }
     }
-    else
+    else if(t.token_type == NOT)
     {
-        return;
+        lexer.GetToken();
+        boolean_expr();
     }
-    cout<<"20"<<endl;
+    else if(t.token_type == ID || t.token_type == TRUE || t.token_type == FALSE)
+    {
+        boolean_primary();
+    }
 }
 
-void Parser::parseTerm()
+void Parser::arithmetic_operator()
 {
-    cout<<"21"<<endl;
-    Token t = peek();
+    Token t = lexer.GetToken();
+    if(t.token_type != PLUS && t.token_type != MINUS && t.token_type != MULT && 
+    t.token_type != DIV)
+    {
+        SyntaxError();
+cout<<"Syntax Error 24"<<endl;
+
+    }
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != PLUS && t1.token_type != MINUS && t1.token_type != MULT && 
+    t1.token_type != DIV && t1.token_type != ID && t1.token_type != NUM && t1.token_type 
+    != REALNUM && t1.token_type != STRING_CONSTANT)
+    {
+        SyntaxError();
+cout<<"Syntax Error 25"<<endl;
+
+    }
+}
+
+void Parser::binary_boolean_operator()
+{
+    Token t = lexer.GetToken();
+    if(t.token_type != AND && t.token_type != OR && t.token_type != XOR)
+    {
+        SyntaxError();
+cout<<"Syntax Error 26"<<endl;
+
+    }
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != AND && t1.token_type != OR && t1.token_type != XOR && t1.token_type != 
+    GREATER && t1.token_type != GTEQ && t1.token_type != LESS && t1.token_type != NOTEQUAL && 
+    t1.token_type != LTEQ && t1.token_type != NOT && t1.token_type != ID && t1.token_type != TRUE 
+    && t1.token_type != FALSE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 27"<<endl;
+
+    }
+}
+
+void Parser::relational_operator()
+{
+    
+
+    Token t = lexer.GetToken();
+    if(t.token_type != GREATER && t.token_type != GTEQ && t.token_type != LESS && 
+    t.token_type != NOTEQUAL && t.token_type != LTEQ)
+    {
+        SyntaxError();
+cout<<"Syntax Error 28"<<endl;
+
+    }
+    Token t1 = lexer.GetToken();
+    lexer.UngetToken(t1);
+    if(t1.token_type != PLUS && t1.token_type != MINUS && t1.token_type != MULT && t1.token_type != 
+    DIV && t1.token_type != ID && t1.token_type != NUM && t1.token_type != REALNUM && 
+    t1.token_type != STRING_CONSTANT && t1.token_type != AND && t1.token_type != OR && t1.token_type != XOR 
+    && t1.token_type != GREATER && t1.token_type != GTEQ && t1.token_type != LESS && t1.token_type != 
+    NOTEQUAL && t1.token_type != LTEQ && t1.token_type != NOT && t1.token_type != ID && t1.token_type != 
+    TRUE && t1.token_type != FALSE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 29"<<endl;
+
+    }
+
+    
+}
+//is not reachable due to incomplete grammar by professor
+void Parser::primary(string Level, Token left_variable)
+{    Token t = lexer.GetToken();
+    
+    /*
+    TYPE* temp00 = type_eval;
+    TYPE* temp01 = new TYPE();
+
+    while(temp00->next != NULL)
+    {
+        temp00=temp00->next;
+    }
+    //error of types
+   
+    pair<bool, string> test;
+
+    Variables* enter = var_types;
+    Token A, B;
+
+    while(enter != NULL)
+    {
+        if(!enter->type.lexeme.empty())
+        {
+            for(auto k: enter->variable)
+            {
+                if(left_variable.lexeme == k.first.lexeme)
+                {
+                    A = enter->type;
+                }
+
+                if(t.lexeme == k.first.lexeme)
+                {
+                    B = enter->type;
+                }
+            }
+           
+        }
+       enter = enter->next;
+
+    }
+
+
+    test = name(A,B);
+
+    //stores token data for mismatch errors
+    Variables* temp00s = var_types;
+    int n1 = 0;
+    int n2 = 0;
+    bool h= false;
+    bool l=false;
+    while(temp00s != NULL)
+    {
+        if(!temp00s->type.lexeme.empty())
+        {
+            for(auto k: temp00s->variable)
+            {
+                if(k.first.token_type == left_variable.token_type)
+                {
+                    h= true;
+
+                }
+
+                if(k.first.token_type == t.token_type)
+                {
+                    //n2 = k.ScopeLevel;
+                    l=true;
+   
+                }
+                
+            }
+            
+        }
+
+       
+            if(h == true)
+            {
+                h=false;
+                n1 = temp00s->ScopeLevel;
+
+            }
+            else if(l == true)
+            {
+                l=false;
+
+                n2 = temp00s->ScopeLevel;
+
+            }
+
+
+       temp00s = temp00s->next;
+
+    }
+if(n1 >= n2)
+{
+
+    if(test.first)
+    {
+        temp01->lineNo = left_variable.line_no;
+        temp01->errorType = test.second;
+        temp01->next = NULL;
+        temp00->next = temp01;
+
+    }
+}   
+    */
+
+    if(t.token_type != ID && t.token_type != NUM && t.token_type != REALNUM && 
+    t.token_type != STRING_CONSTANT && t.token_type != TRUE && t.token_type != FALSE)
+    {
+        SyntaxError();
+cout<<"Syntax Error 30"<<endl;
+
+    }
+
     if(t.token_type == ID)
     {
-        parseMonomial_list();
-    }
-    else if(t.token_type == NUM)
+        //used variable
+         bool eval = false;
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
     {
-        parseCoefficient();
-        t = peek();
-        if(t.token_type == ID)
+        if(!temp00->type.lexeme.empty())
         {
-            parseMonomial_list();
+            for(auto k: temp00->variable)
+            {
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel >= ScopeLevelCounter)
+                {
+                    eval = true;
+                    
+                }
+
+
+            }
+
         }
-        else
-        {
-            return;
-        }
+       temp00 = temp00->next;
     }
-    else
+
+
+Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
     {
-        syntax_error();
+        temp = temp->next;
     }
-    cout<<"22"<<endl;
+
+    if(eval == false && printh == true)
+    {
+        printh = false;
+        //error 1.2
+        temp1->error_code = "1.2";
+        temp1->symbol_name = t.lexeme;
+        temp1->priority = prio;
+        temp1->next = NULL;
+        temp->next = temp1; 
+       
+    }
+
+
+
+        
+        //////////////////////likely to be deleted
+        UNINITIALIZED* temp1L = new UNINITIALIZED();
+        UNINITIALIZED* tempL = uninitialized;
+
+
+        while(tempL->next != NULL)
+        {
+            tempL = tempL->next;
+        }
+
+
+        if(mem[SymbolTable[t.lexeme]].empty())
+        {
+            temp1L->uninitialized_name = t.lexeme;
+            temp1L->uninitialized_line_no = t.line_no;
+            temp1L->next = NULL;
+            tempL->next = temp1L;
+
+        }
+        ////////////////////////
+        
+
+    }
+
+    
+
+    if(t.token_type == TRUE || t.token_type == FALSE)
+    {
+        lexer.UngetToken(t);
+        bool_const();
+    }
 }
 
-void Parser::parseMonomial_list()
+
+
+
+
+void Parser::arithmetic_primary()
 {
-    cout<<"23"<<endl;
-    parseMonomial();
-    Token t = peek();
+    Token t = lexer.GetToken();
+    if(t.token_type != ID && t.token_type != NUM && t.token_type != REALNUM && 
+    t.token_type != STRING_CONSTANT)
+    {
+       SyntaxError();
+cout<<"Syntax Error 31"<<endl;
+
+    }
+
+    if(t.token_type != REAL || t.token_type != INT || t.token_type != STRING)
+    {
+        //cout<<"TYPE MISMATCH "<<t.line_no<<" C4"<<endl;
+    }
+
     if(t.token_type == ID)
     {
-        parseMonomial_list();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"24"<<endl;
-}
 
-void Parser::parseMonomial()
-{
-    cout<<"25"<<endl;
-    expect(ID);
-    cout<<"jj"<<endl;
-    Token t = peek();
-    if(t.token_type == POWER)
-    {
-        parseExponent();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"26"<<endl;
-}
-
-void Parser::parseExponent()
-{
-    cout<<"27"<<endl;
-    expect(POWER);
-    expect(NUM);
-    cout<<"28"<<endl;
-}
-
-void Parser::parseAdd_operator()
-{
-    cout<<"29"<<endl;
-    Token t = peek();
-    if(t.token_type == PLUS || t.token_type == MINUS)
-    {
-        t = lexer.GetToken();
-    }
-    else
-    {
-        syntax_error();
-    }
-    cout<<"30"<<endl;
-}
-
-void Parser::parseCoefficient()
-{
-    cout<<"31"<<endl;
-    expect(NUM);
-    cout<<"32"<<endl;
-}
-
-void Parser::parseStart()
-{
-    cout<<"33"<<endl;
-    expect(START);
-    parseStatement_list();
-    cout<<"34"<<endl;
-}
-
-void Parser::parseStatement_list()
-{
-    cout<<"35"<<endl;
-    parseStatement();
-    Token t = peek();
-    if(t.token_type == ID || t.token_type == INPUT)
-    {
-        parseStatement_list();
-    }
-    else
-    {
-        return;
-    }
-    cout<<"36"<<endl;
-}
-
-void Parser::parseStatement()
-{
-    cout<<"37"<<endl;
-    Token t = peek();
-    if(t.token_type == INPUT)
-    {
-        cout<<"37A"<<endl;
-        parseInput_statement();
-    }
-    else if(t.token_type == ID)
-    {
-        cout<<"37B"<<endl;
-        parsePoly_evaluation_statement();
-    }
-    else
-    {
-        cout<<"37C"<<endl;
-        syntax_error();
-    }
-    cout<<"38"<<endl;
-}
-
-void Parser::parsePoly_evaluation_statement()
-{
-    cout<<"39"<<endl;
-    parsePolynomial_evaluation();
-    expect(SEMICOLON);
-    cout<<"40"<<endl;
-}
-
-void Parser::parseInput_statement()
-{
-    cout<<"41"<<endl;
-    expect(INPUT);
-
-//variable memory allocation
-    Token t = peek();
-
-    bool variableExists = false;
-
-    for(auto begin : symbolTable)
-    {
-        if(begin.variable == t.lexeme)
+        
+        Variables* temp00a = var_types;
+        while(temp00a != NULL)
         {
-            variableExists = true;
-            break;
+            
+                for(auto k: temp00a->variable)
+                {
+                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel >= ScopeLevelCounter)
+                    {
+                        k.second = true;
+                            
+                    }
+
+                }
+        temp00a = temp00a->next;
+
         }
-    } 
 
-    if(!variableExists)
+//////////////////////
+
+               bool eval = false;
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
     {
+        if(!temp00->type.lexeme.empty())
+        {
+            for(auto k: temp00->variable)
+            {
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel >= ScopeLevelCounter)
+                {
+                    eval = true;
+                    
+                }
 
-     table->variable = t.lexeme;
-     table->tableIndex = next_available;
-     symbolTable.push_back(*table);
-     memory.push_back(0);
-     next_available++;
+
+            }
+
+        }
+       temp00 = temp00->next;
+    }
+
+
+Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    if(eval == false && printh == true)
+    {
+        printh = false;
+        //error 1.2
+        temp1->error_code = "1.2";
+        temp1->symbol_name = t.lexeme;
+        temp1->priority = prio;
+        temp1->next = NULL;
+        temp->next = temp1; 
+       
+    }
+
+
+
+
+////////////////////////        
+
+        /*//likely to be deleted
+        UNINITIALIZED* temp1 = new UNINITIALIZED();
+        UNINITIALIZED* temp = uninitialized;
+        while(temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        if(mem[SymbolTable[t.lexeme]].empty())
+        {   
+            temp1->uninitialized_name = t.lexeme;
+            temp1->uninitialized_line_no = t.line_no;
+            temp1->next = NULL;
+            temp->next = temp1;
+        }
+        /*//////////////////////////////////////
+
+
 
     }
 
-//continues normal parser operations
-    expect(ID);
-    expect(SEMICOLON);
-    cout<<"42"<<endl;
 }
 
-void Parser::parsePolynomial_evaluation()
+void Parser::boolean_primary()
 {
-    cout<<"43"<<endl;
-    parsePolynomial_name();
-    expect(LPAREN);
-    parseArgument_list();
-    expect(RPAREN);
-    cout<<"44"<<endl;
-}
-
-void Parser::parseArgument_list()
-{
-    cout<<"45"<<endl;
-    parseArgument();
-    Token t = peek();
-    if(t.token_type == COMMA)
+    Token t = lexer.GetToken();
+    if(t.token_type != ID && t.token_type != TRUE && t.token_type != FALSE)
     {
-        t = lexer.GetToken();
-        parseArgument_list();           
+        SyntaxError();
+cout<<"Syntax Error 32"<<endl;
+
     }
-    else
+
+    
+    if(t.token_type == ID)
+    {
+        
+
+        Variables* temp00a = var_types;
+        while(temp00a != NULL)
+        {
+            
+                for(auto k: temp00a->variable)
+                {
+               
+                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel >= ScopeLevelCounter)
+                    {
+                        k.second = true;
+                            
+                    }
+
+                }
+        temp00a = temp00a->next;
+
+        }
+        
+
+    /////////////////////
+           bool eval = false;
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
+    {
+        if(!temp00->type.lexeme.empty() && temp00->ScopeLevel >= 0)
+        {
+            for(auto k: temp00->variable)
+            {
+                cout<<k.first.lexeme<<endl;
+                    cout<<temp00->ScopeLevel<<endl;
+                    cout<<temp00->ScopeLevel<<endl;
+                if(k.first.lexeme == t.lexeme  && temp00->ScopeLevel == ScopeLevelCounter)
+                {
+                    
+                    eval = true;
+                    
+                }
+
+
+            }
+
+        }
+       temp00 = temp00->next;
+    }
+
+
+Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    if(eval == false && printh == true)
+    {
+        printh = false;
+        //error 1.2
+        temp1->error_code = "1.2";
+        temp1->symbol_name = t.lexeme;
+        temp1->priority = prio;
+        temp1->next = NULL;
+        temp->next = temp1; 
+       
+    }
+
+
+
+
+////////////////
+
+
+
+
+
+
+
+        /*//likely to be removed
+        UNINITIALIZED* temp1 = new UNINITIALIZED();
+        UNINITIALIZED* temp = uninitialized;
+        while(temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        if(mem[SymbolTable[t.lexeme]].empty())
+        {
+            temp1->uninitialized_name = t.lexeme;
+            temp1->uninitialized_line_no = t.line_no;
+            temp1->next = NULL;
+            temp->next = temp1;
+
+        }
+        */
+
+    }
+
+
+
+    if(t.token_type == TRUE || t.token_type == FALSE)
+    {
+        lexer.UngetToken(t);
+        bool_const();
+    }
+}
+
+void Parser::bool_const()
+{
+    Token t = lexer.GetToken();
+    if(t.token_type != TRUE && t.token_type != FALSE)
     {
         return;
     }
-    cout<<"46"<<endl;
 }
 
-void Parser::parseArgument()
+void Parser::condition()
 {
-    cout<<"47"<<endl;
-    Token t = peek();
-    if(t.token_type == NUM || t.token_type == ID)
+    //needs remainder of grammar by professor
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    if(t.token_type != AND && t.token_type != XOR && t.token_type != GTEQ && t.token_type != GREATER &&
+    t.token_type != LESS && t.token_type != NOTEQUAL && t.token_type != LTEQ && t.token_type 
+    != NOT && t.token_type != ID && t.token_type !=TRUE && t.token_type != FALSE)
     {
-        t = lexer.GetToken();
+        SyntaxError();
+cout<<"Syntax Error 33"<<endl;
     }
-    else 
-    {
-        parsePolynomial_evaluation();
-    }
-    cout<<"48"<<endl;
+
+    
+    boolean_expr();
+
 }
+
+void Parser::SyntaxError()
+{
+    cout<<"Syntax Error &!#@"<<endl;
+    exit(0);
+}
+
+pair<bool,string> Parser::name(Token left_variable, Token t)
+{
+    
+    if((left_variable.token_type == BOOLEAN && t.token_type != BOOLEAN) || 
+    (left_variable.token_type == STRING && !(t.token_type == STRING)))
+    {
+        return make_pair(true, "C1");
+    }
+    else if(left_variable.token_type == INT && !(t.token_type == INT || t.token_type == BOOLEAN))
+    {
+        return make_pair(true,"C2");
+    }
+    else if(left_variable.token_type == REAL && !(t.token_type == INT || t.token_type == REAL))
+    {
+        return make_pair(true, "C3");
+    }
+    else if((left_variable.token_type == BOOLEAN && t.token_type == BOOLEAN) || 
+    (left_variable.token_type == STRING && t.token_type == STRING) || 
+    (left_variable.token_type == INT && (t.token_type == INT || t.token_type == BOOLEAN)) || 
+    (left_variable.token_type == REAL && (t.token_type == INT || t.token_type == REAL)))
+    {
+        return make_pair(false,"");
+    }
+    else
+    {
+        return make_pair(true,"M1");
+    }
+
+}
+
 
 int main()
 {
-    Parser parse;
-    parse.parseInput();
+    /*
+    LexicalAnalyzer lexer;
+    Token token;
+
+    token = lexer.GetToken();
+    token.Print();
+    while (token.token_type != END_OF_FILE)
+    {
+        token = lexer.GetToken();
+        token.Print();
+    }
+
+    */
+
+    Parser test;
+    test.program();
+
+
+
+
+    ///////////////
+    Error* temp = errorCode;
+    Error* temp1 = new Error();
+
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
+    {
+        if(!temp00->type.lexeme.empty())
+        {
+            for(auto k: temp00->variable)
+            {
+               if(k.second == false && printh == true)
+               {
+                   printh = false;
+                    temp1->error_code = "1.3";
+                    temp1->symbol_name = k.first.lexeme;
+                    temp1->priority = ScopeLevelCounter;
+                    temp1->next = NULL;
+                    temp->next = temp1; 
+               }
+
+            }
+        }
+       temp00 = temp00->next;
+
+    }
+
+
+    //////////////
+
+
+    
+    Error* temp00A = errorCode;
+
+        while(temp00A != NULL)
+        {    
+            if(!temp00A->error_code.empty() && !temp00A->symbol_name.empty())
+            { 
+                cout<<"ERROR CODE "<<temp00A->error_code<<" ";
+                cout<<temp00A->symbol_name<<endl;
+            }
+        
+        temp00A = temp00A->next;
+
+        }
+    
+
+/*
+    Variables* temp00 = var_types;
+    while(temp00 != NULL)
+    {
+        if(!temp00->type.lexeme.empty())
+        {
+            for(auto k: temp00->variable)
+            {
+                cout<<k.lexeme<<" ";
+            }
+            cout<<" : "<<temp00->type.lexeme<<" "<<temp00->ScopeLevel<<" "<<temp00->LevelName<<endl;
+        }
+       temp00 = temp00->next;
+
+    }
+
+*/
+
+
+/*
+    TYPE* temp0 = type_eval;
+    while(temp0 != NULL)
+    {
+       
+        if(!temp0->errorType.empty())
+        {
+            cout<<"TYPE MISMATCH "<<temp0->lineNo<<" ";
+            cout<<temp0->errorType<<endl;
+        }
+
+       temp0 = temp0->next;
+
+    }
+*/
+    
+    
+    if(errorCode == NULL)
+    {
+
+        UNINITIALIZED *temp = uninitialized;
+
+        while(temp != NULL)
+        {
+            if(!temp->uninitialized_name.empty())
+            {
+                cout<<"UNINITIALIZED "<<temp->uninitialized_name<<" ";
+                cout<<temp->uninitialized_line_no<<endl;
+            }
+            temp = temp->next;
+
+        }
+    }
+    
 
 
 }

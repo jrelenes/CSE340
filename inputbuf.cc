@@ -8,7 +8,6 @@
 #include <vector>
 #include <string>
 #include <cstdio>
-
 #include "inputbuf.h"
 
 using namespace std;

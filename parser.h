@@ -1,16 +1,19 @@
-/*
- * Copyright (C) Rida Bazzi, 2019
- *
- * Do not share this file with anyone
- */
-#ifndef __PARSER_H__
-#define __PARSER_H__
-
-#include <string>
+#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <string.h>
+#include <iostream>
 #include "lexer.h"
-#include <vector>
-#include <deque>
+#include <map>
+#include <string.h>
+#include <string>
 using namespace std;
+
+string mem[1000];
+map<string, int> SymbolTable;
+
 
 class Parser {
   private:
@@ -20,52 +23,80 @@ class Parser {
     Token expect(TokenType expected_type);
     Token peek(); //get unget
   public:
-    void parseInput();
-    void parseProgram();
-    void parseInputs();
-    void parsePoly_decl_section();
-    void parseStart();
-    void parsePoly_decl();
-    void parsePolynomial_header();
-    void parsePolynomial_body();
-    void parsePolynomial_name();
-    void parseId_list();
-    void parseTerm_list();
-    void parseTerm();
-    void parseAdd_operator();
-    void parseMonomial_list();
-    void parseCoefficient();
-    void parseMonomial();
-    void parseExponent();
-    void parseStatement_list();
-    void parseStatement();
-    void parseInput_statement();
-    void parsePoly_evaluation_statement();
-    void parsePolynomial_evaluation();
-    void parseArgument_list();
-    void parseArgument();
+
+	void program();
+	void scope(string);
+	void scope_list(string);
+	void var_decl(string);
+	void id_list(struct Variables*, string);
+	void type_name(struct Variables*);
+	void stmt_list(string);
+	void stmt(string);
+	void assign_stmt(string);
+	void while_stmt(string);
+	void expr(Token, string);
+	void arithmetic_expr();
+	void boolean_expr();
+	void arithmetic_operator();
+	void binary_boolean_operator();
+	void relational_operator();
+	void primary(string, Token);
+	void arithmetic_primary();
+	void boolean_primary();
+	void bool_const();
+	void condition();
+	void SyntaxError();
+	pair<bool,string> name(Token, Token);
 
 };
+	//tracks scope location
+	// if not found local is
+	//compatible with greater scope values
+
+	int ScopeLevelCounter = 0;
+	bool printh = true;
+
+    struct Variables
+	{
+		vector<pair<Token,bool>> variable;
+		Token type;
+		int ScopeLevel;
+		string LevelName;
+		struct Variables *next;
+	};
 
 
-//UNDER CONSTRUCTION
-    struct symbolTableN
-    {
-      string variable;
-      int tableIndex;
-      
-    };
+	struct TYPE
+	{
+		//type mismatch error
+		//declare all in same structure to
+		//call later
+		
+		int lineNo;
+		string errorType;
+		
+		struct TYPE *next;
+	};	
+	
+	struct UNINITIALIZED
+	{
+		string uninitialized_name;
+		int uninitialized_line_no;
+		struct UNINITIALIZED *next;
+	};
 
-    vector<struct symbolTableN> symbolTable;
-    
-    //stores values of variables
-    vector<int> memory;
-//*********************
+	struct NO_ERROR
+	{
+		string left;
+		Token declared_line_no;
+		int assigned_line_no;
+		struct NO_ERROR *next;
+	};	
 
-//stores variable inputs
-deque<int> variableInputs;
-
-
-
-#endif
-
+	struct Error
+	{
+		string error_code;
+		string symbol_name;
+		int priority;
+		struct Error *next;
+	};	

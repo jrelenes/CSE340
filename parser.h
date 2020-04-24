@@ -11,7 +11,7 @@
 #include <string>
 using namespace std;
 
-string mem[1000];
+int mem[1000];
 map<string, int> SymbolTable;
 
 
@@ -28,20 +28,20 @@ class Parser {
 	void scope(string);
 	void scope_list(string);
 	void var_decl(string);
-	void id_list(struct Variables*, string);
+	void id_list(struct Variables*, string, vector<string>);
 	void type_name(struct Variables*);
 	void stmt_list(string);
 	void stmt(string);
 	void assign_stmt(string);
 	void while_stmt(string);
 	void expr(Token, string);
-	void arithmetic_expr();
-	void boolean_expr();
+	void arithmetic_expr(string);
+	void boolean_expr(string);
 	void arithmetic_operator();
 	void binary_boolean_operator();
 	void relational_operator();
 	void primary(string, Token);
-	void arithmetic_primary();
+	void arithmetic_primary(string);
 	void boolean_primary();
 	void bool_const();
 	void condition();
@@ -54,6 +54,7 @@ class Parser {
 	//compatible with greater scope values
 
 	int ScopeLevelCounter = 0;
+	int globalWhile = 0;
 	bool printh = true;
 
     struct Variables

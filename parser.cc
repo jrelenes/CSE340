@@ -28,7 +28,7 @@ Error* errorCode = new Error();
 int version = 0;
 
 
-
+//revaluate the scope version LevelName
 
 
 /*
@@ -223,7 +223,8 @@ cout<<"Syntax Error 6"<<endl;
         tempV = tempV->next;
     }
 
-    id_list(tempV1, Level);
+    vector<string> bar;
+    id_list(tempV1, Level, bar);
 
     Token t1 = lexer.GetToken();
     if(t1.token_type != COLON)
@@ -246,14 +247,49 @@ cout<<"Syntax Error 8"<<endl;
     }
 }
 
-void Parser::id_list(struct Variables *tempV1, string Level)
+void Parser::id_list(struct Variables *tempV1, string Level, vector<string> bar)
 {
     
     Token t = lexer.GetToken();
+    mem[SymbolTable[t.lexeme]] == 0;
+
+    for(auto k : bar)
+    {
+        if(k == t.lexeme && printh ==true)
+        {
+            printh = false;
+            Error* temp = errorCode;
+            Error* temp1 = new Error();
+
+            while(temp->next != NULL)
+            {
+                temp = temp->next;
+            }
+
+                //error 1.2
+                temp1->error_code = "1.1";
+                temp1->symbol_name = t.lexeme;
+                temp1->priority = ScopeLevelCounter;
+                temp1->next = NULL;
+                temp->next = temp1; 
+            
+
+
+        }
+    }
+
+    bar.push_back(t.lexeme);
 //////////////////////////////
+    if(t.lexeme == "REAL" || t.lexeme == "INT" || t.lexeme == "BOOLEAN" || t.lexeme == "STRING")
+    {
+        cout<<"Syntax Error &!#@"<<endl;
+        exit(0);
+
+    }
+   
 
     //////////////////
-
+    //cout<<"break"<<endl;
     bool eval = false;
     Variables* temp00 = var_types;
     while(temp00 != NULL)
@@ -262,17 +298,21 @@ void Parser::id_list(struct Variables *tempV1, string Level)
         {
             for(auto k: temp00->variable)
             {
-                if(k.first.lexeme == t.lexeme)
+                //cout<<k.first.lexeme<<" "<<temp00->ScopeLevel<<" "<<ScopeLevelCounter<<endl;
+
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel == ScopeLevelCounter)
                 {
+                    //cout<<k.first.lexeme<<" "<<temp00->ScopeLevel<<" "<<ScopeLevelCounter<<endl;
+
                     eval = true;
                 }
 
             }
 
-            if(temp00->ScopeLevel > ScopeLevelCounter)
-            {
-                eval = false;
-            }
+            //if(temp00->ScopeLevel > ScopeLevelCounter)
+            //{
+            //    eval = false;
+            //}
 
         }
        temp00 = temp00->next;
@@ -329,7 +369,7 @@ cout<<"Syntax Error 9"<<endl;
     if(t1.token_type == COMMA)
     {
         lexer.GetToken();
-        id_list(tempV1, Level);
+        id_list(tempV1, Level, bar);
     }
 
 }
@@ -400,27 +440,42 @@ cout<<"Syntax Error 13"<<endl;
 void Parser::assign_stmt(string Level)
 {
     Token t = lexer.GetToken();
+    //mem[SymbolTable[t.lexeme]] = 1;
+
 
     ////////////////////////////
 
-
     //for the equal value not declaration
-    Variables* temp007 = var_types;
-        while(temp007 != NULL)
+
+        Variables* temp008 = var_types;
+
+        while(temp008 != NULL)
         {
-            
-                for(auto k: temp007->variable)
+            vector<pair<Token,bool>> pushIt;
+
+                for(auto k: temp008->variable)
                 {
-                    if(k.first.lexeme == t.lexeme && temp007->ScopeLevel >= ScopeLevelCounter)
+                    //vector<pair(string,>
+
+                    if(k.first.lexeme == t.lexeme && temp008->ScopeLevel <= ScopeLevelCounter && globalWhile == 0)
                     {
                         k.second = true;
-                            
+    
                     }
 
-                }
-        temp007 = temp007->next;
+                    pushIt.push_back(k);
 
+                }
+
+            temp008->variable = pushIt;
+            
+            temp008 = temp008->next;
         }
+
+
+
+
+
 
 
 
@@ -435,7 +490,7 @@ void Parser::assign_stmt(string Level)
         {
             for(auto k: temp00->variable)
             {
-                if(k.first.lexeme == t.lexeme)
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel <= ScopeLevelCounter)
                 {
                     eval = true;
                     
@@ -443,10 +498,7 @@ void Parser::assign_stmt(string Level)
 
             }
 
-            if(temp00->ScopeLevel > ScopeLevelCounter)
-            {
-                eval = true;
-            }
+            
 
         }
        temp00 = temp00->next;
@@ -475,7 +527,6 @@ void Parser::assign_stmt(string Level)
     
     
 
-    mem[SymbolTable[t.lexeme]] = "I";
     Token t1 = lexer.GetToken();
     if(t.token_type != ID && t1.token_type != EQUAL)
     {
@@ -513,7 +564,6 @@ cout<<"Syntax Error 16"<<endl;
     Token t2 = lexer.GetToken();
     Token t3 = lexer.GetToken();
     lexer.UngetToken(t3);
-
     if(t2.token_type != RPAREN)
     {
          SyntaxError();
@@ -524,7 +574,10 @@ cout<<"Syntax Error 16"<<endl;
     if(t3.token_type == LBRACE)
     {
         lexer.GetToken();
+
+        globalWhile++;
         stmt_list(Level);
+        globalWhile--;
         Token t4 =lexer.GetToken();
         if(t4.token_type != RBRACE)
         {
@@ -535,7 +588,9 @@ cout<<"Syntax Error 16"<<endl;
     }
     else
     {
+        globalWhile++;
         stmt(Level);
+        globalWhile--;
     }
 
               
@@ -567,14 +622,14 @@ cout<<"Syntax Error 19"<<endl;
     {
                // cout<<"1"<<endl;
 
-        boolean_expr();
+        boolean_expr(left_variable.lexeme);
     }
     else if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || 
     t.token_type == DIV)
     {
                 //cout<<"2"<<endl;
 
-        arithmetic_expr();
+        arithmetic_expr(left_variable.lexeme);
 
     }
     else if(t.token_type == ID || t.token_type == NUM || t.token_type == REALNUM || 
@@ -589,7 +644,7 @@ cout<<"Syntax Error 19"<<endl;
 
 }
 
-void Parser::arithmetic_expr()
+void Parser::arithmetic_expr(string left_variable)
 {
     Token t = lexer.GetToken();
     lexer.UngetToken(t);
@@ -609,8 +664,8 @@ cout<<"Syntax Error 20"<<endl;
     t.token_type == DIV)
     {
         arithmetic_operator();
-        arithmetic_expr();  //variable  //variable
-        arithmetic_expr();  //variable
+        arithmetic_expr(left_variable);  //variable  //variable
+        arithmetic_expr(left_variable);  //variable
         
 
     }
@@ -619,7 +674,7 @@ cout<<"Syntax Error 20"<<endl;
     else if(t.token_type != ID || t.token_type != NUM || t.token_type != REALNUM || 
     t.token_type != STRING_CONSTANT)
     {
-        arithmetic_primary();
+        arithmetic_primary(left_variable);
         
       
     }
@@ -634,7 +689,7 @@ cout<<"Syntax Error 21"<<endl;
 
 }
 
-void Parser::boolean_expr()
+void Parser::boolean_expr(string left_variable)
 {
     Token t = lexer.GetToken();
     lexer.UngetToken(t);
@@ -646,12 +701,16 @@ void Parser::boolean_expr()
 cout<<"Syntax Error 22"<<endl;
 
     }
+
+
+
     if(t.token_type == AND || t.token_type == OR || t.token_type == XOR)
     {
+
         //data structure with errors below to be added
         binary_boolean_operator();
-        boolean_expr();
-        boolean_expr();
+        boolean_expr(left_variable);
+        boolean_expr(left_variable);
     }
     else if(t.token_type == GREATER || t.token_type == GTEQ || t.token_type == LESS || 
     t.token_type == NOTEQUAL || t.token_type == LTEQ)
@@ -666,16 +725,16 @@ cout<<"Syntax Error 22"<<endl;
     == REALNUM || j.token_type == STRING_CONSTANT)
         {
             relational_operator();
-            arithmetic_expr();
-            arithmetic_expr();
+            arithmetic_expr(left_variable);
+            arithmetic_expr(left_variable);
         }//can go both ways
         else if(j.token_type == AND || j.token_type == XOR || j.token_type == GTEQ || 
     j.token_type == LESS || j.token_type == NOTEQUAL || j.token_type == LTEQ || j.token_type 
     == NOT || j.token_type == ID || j.token_type ==TRUE || j.token_type == FALSE)
         {
             relational_operator();
-            boolean_expr();
-            boolean_expr();
+            boolean_expr(left_variable);
+            boolean_expr(left_variable);
         }
         else
         {
@@ -687,7 +746,7 @@ cout<<"Syntax Error 23"<<endl;
     else if(t.token_type == NOT)
     {
         lexer.GetToken();
-        boolean_expr();
+        boolean_expr(left_variable);
     }
     else if(t.token_type == ID || t.token_type == TRUE || t.token_type == FALSE)
     {
@@ -770,7 +829,8 @@ cout<<"Syntax Error 29"<<endl;
 //is not reachable due to incomplete grammar by professor
 void Parser::primary(string Level, Token left_variable)
 {    Token t = lexer.GetToken();
-    
+
+
     /*
     TYPE* temp00 = type_eval;
     TYPE* temp01 = new TYPE();
@@ -881,8 +941,74 @@ cout<<"Syntax Error 30"<<endl;
 
     }
 
+    if(t.lexeme == "REAL" || t.lexeme == "INT" || t.lexeme == "BOOLEAN" || t.lexeme == "STRING")
+    {
+        cout<<"Syntax Error &!#@"<<endl;
+        exit(0);
+
+    }
+  
+
+
     if(t.token_type == ID)
     {
+
+        //////////////////////
+        Variables* temp00a = var_types;
+        while(temp00a != NULL)
+        {
+                    vector<pair<Token,bool>> pushIt;
+
+                for(auto k: temp00a->variable)
+                {
+                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel <= ScopeLevelCounter && globalWhile == 0)
+                    {
+                        k.second = true;
+
+                        //////////////////////likely to be deleted
+                        mem[SymbolTable[left_variable.lexeme]] = 1;
+
+
+                        UNINITIALIZED* temp1L = new UNINITIALIZED();
+                        UNINITIALIZED* tempL = uninitialized;
+
+
+                        while(tempL->next != NULL)
+                        {
+                            tempL = tempL->next;
+                        }
+
+
+                        if(mem[SymbolTable[t.lexeme]] == 0)
+                        {
+                            temp1L->uninitialized_name = t.lexeme;
+                            temp1L->uninitialized_line_no = t.line_no;
+                            temp1L->next = NULL;
+                            tempL->next = temp1L;
+
+                        }
+                        ////////////////////////
+
+
+                            
+                    }
+                   
+                            pushIt.push_back(k);
+
+
+                }
+                        temp00a->variable = pushIt;
+
+        temp00a = temp00a->next;
+
+        }
+
+        ////////////////////////
+         
+
+
+
+
         //used variable
          bool eval = false;
     Variables* temp00 = var_types;
@@ -892,7 +1018,7 @@ cout<<"Syntax Error 30"<<endl;
         {
             for(auto k: temp00->variable)
             {
-                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel >= ScopeLevelCounter)
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel <= ScopeLevelCounter)
                 {
                     eval = true;
                     
@@ -929,26 +1055,7 @@ Error* temp = errorCode;
 
 
         
-        //////////////////////likely to be deleted
-        UNINITIALIZED* temp1L = new UNINITIALIZED();
-        UNINITIALIZED* tempL = uninitialized;
-
-
-        while(tempL->next != NULL)
-        {
-            tempL = tempL->next;
-        }
-
-
-        if(mem[SymbolTable[t.lexeme]].empty())
-        {
-            temp1L->uninitialized_name = t.lexeme;
-            temp1L->uninitialized_line_no = t.line_no;
-            temp1L->next = NULL;
-            tempL->next = temp1L;
-
-        }
-        ////////////////////////
+       
         
 
     }
@@ -966,7 +1073,7 @@ Error* temp = errorCode;
 
 
 
-void Parser::arithmetic_primary()
+void Parser::arithmetic_primary(string left_variable)
 {
     Token t = lexer.GetToken();
     if(t.token_type != ID && t.token_type != NUM && t.token_type != REALNUM && 
@@ -976,6 +1083,35 @@ void Parser::arithmetic_primary()
 cout<<"Syntax Error 31"<<endl;
 
     }
+        
+/*
+    Variables* temp00a = var_types;
+        while(temp00a != NULL)
+        {
+
+                for(auto k: temp00a->variable)
+                {
+                    if(k.first.lexeme == left_variable && temp00a->ScopeLevel <= ScopeLevelCounter)
+                    {
+                       
+                            mem[SymbolTable[left_variable]] = 1;
+                    }
+
+                }
+
+        temp00a = temp00a->next;
+
+        }
+
+*/
+
+    if(t.lexeme == "REAL" || t.lexeme == "INT" || t.lexeme == "BOOLEAN" || t.lexeme == "STRING")
+    {
+        cout<<"Syntax Error &!#@"<<endl;
+        exit(0);
+
+    }
+
 
     if(t.token_type != REAL || t.token_type != INT || t.token_type != STRING)
     {
@@ -989,21 +1125,54 @@ cout<<"Syntax Error 31"<<endl;
         Variables* temp00a = var_types;
         while(temp00a != NULL)
         {
-            
+                    vector<pair<Token,bool>> pushIt;
+
                 for(auto k: temp00a->variable)
                 {
-                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel >= ScopeLevelCounter)
+                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel <= ScopeLevelCounter && globalWhile == 0)
                     {
                         k.second = true;
+
+                        //////////////////////likely to be deleted
+
+
+                        UNINITIALIZED* temp1L = new UNINITIALIZED();
+                        UNINITIALIZED* tempL = uninitialized;
+
+
+                        while(tempL->next != NULL)
+                        {
+                            tempL = tempL->next;
+                        }
+
+
+                        if(mem[SymbolTable[t.lexeme]] == 0)
+                        {
+                            temp1L->uninitialized_name = t.lexeme;
+                            temp1L->uninitialized_line_no = t.line_no;
+                            temp1L->next = NULL;
+                            tempL->next = temp1L;
+
+                        }
+                        ////////////////////////
+
                             
                     }
+                            pushIt.push_back(k);
+
 
                 }
+                        temp00a->variable = pushIt;
+
         temp00a = temp00a->next;
 
         }
 
+
+        
+
 //////////////////////
+ 
 
                bool eval = false;
     Variables* temp00 = var_types;
@@ -1013,7 +1182,7 @@ cout<<"Syntax Error 31"<<endl;
         {
             for(auto k: temp00->variable)
             {
-                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel >= ScopeLevelCounter)
+                if(k.first.lexeme == t.lexeme && temp00->ScopeLevel <= ScopeLevelCounter)
                 {
                     eval = true;
                     
@@ -1084,6 +1253,19 @@ cout<<"Syntax Error 32"<<endl;
 
     }
 
+
+    if(t.lexeme == "REAL" || t.lexeme == "INT" || t.lexeme == "BOOLEAN" || t.lexeme == "STRING")
+    {
+        cout<<"Syntax Error &!#@"<<endl;
+        exit(0);
+
+    }
+
+
+
+
+
+
     
     if(t.token_type == ID)
     {
@@ -1092,23 +1274,56 @@ cout<<"Syntax Error 32"<<endl;
         Variables* temp00a = var_types;
         while(temp00a != NULL)
         {
-            
+                    vector<pair<Token,bool>> pushIt;
+
                 for(auto k: temp00a->variable)
                 {
                
-                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel >= ScopeLevelCounter)
+                    if(k.first.lexeme == t.lexeme && temp00a->ScopeLevel <= ScopeLevelCounter && globalWhile == 0)
                     {
                         k.second = true;
+
+                         //////////////////////likely to be deleted
+
+                        UNINITIALIZED* temp1L = new UNINITIALIZED();
+                        UNINITIALIZED* tempL = uninitialized;
+
+
+                        while(tempL->next != NULL)
+                        {
+                            tempL = tempL->next;
+                        }
+
+
+                        if(mem[SymbolTable[t.lexeme]] == 0)
+                        {
+                            temp1L->uninitialized_name = t.lexeme;
+                            temp1L->uninitialized_line_no = t.line_no;
+                            temp1L->next = NULL;
+                            tempL->next = temp1L;
+
+                        }
+                        ////////////////////////
+
+
+
+
                             
                     }
+                            pushIt.push_back(k);
+
 
                 }
+                    temp00a->variable = pushIt;
+
         temp00a = temp00a->next;
 
         }
         
+        
 
     /////////////////////
+    
            bool eval = false;
     Variables* temp00 = var_types;
     while(temp00 != NULL)
@@ -1117,12 +1332,9 @@ cout<<"Syntax Error 32"<<endl;
         {
             for(auto k: temp00->variable)
             {
-                cout<<k.first.lexeme<<endl;
-                    cout<<temp00->ScopeLevel<<endl;
-                    cout<<temp00->ScopeLevel<<endl;
-                if(k.first.lexeme == t.lexeme  && temp00->ScopeLevel == ScopeLevelCounter)
+                
+                if(k.first.lexeme == t.lexeme  && temp00->ScopeLevel <= ScopeLevelCounter)
                 {
-                    
                     eval = true;
                     
                 }
@@ -1216,8 +1428,7 @@ void Parser::condition()
 cout<<"Syntax Error 33"<<endl;
     }
 
-    
-    boolean_expr();
+    boolean_expr("");
 
 }
 
@@ -1297,6 +1508,7 @@ int main()
         {
             for(auto k: temp00->variable)
             {
+               // cout<<k.first.lexeme<<" "<<k.second<<endl;
                if(k.second == false && printh == true)
                {
                    printh = false;
@@ -1368,24 +1580,23 @@ int main()
     }
 */
     
-    
-    if(errorCode == NULL)
+    if(errorCode == NULL || errorCode->next == NULL)
     {
 
-        UNINITIALIZED *temp = uninitialized;
+        UNINITIALIZED *temp7 = uninitialized;
 
-        while(temp != NULL)
+        while(temp7 != NULL)
         {
-            if(!temp->uninitialized_name.empty())
+            if(!temp7->uninitialized_name.empty())
             {
-                cout<<"UNINITIALIZED "<<temp->uninitialized_name<<" ";
-                cout<<temp->uninitialized_line_no<<endl;
+                cout<<"UNINITIALIZED "<<temp7->uninitialized_name<<" ";
+                cout<<temp7->uninitialized_line_no<<endl;
             }
-            temp = temp->next;
+            temp7 = temp7->next;
 
         }
     }
-    
+
 
 
 }

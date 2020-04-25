@@ -56,11 +56,14 @@ class Parser {
 	int ScopeLevelCounter = 0;
 	int globalWhile = 0;
 	bool printh = true;
+	bool enter_b = false;
+	bool condition_bool = false;
+	bool NOT_bool = false;
 
     struct Variables
 	{
 		vector<pair<Token,bool>> variable;
-		Token type;
+		string type;
 		int ScopeLevel;
 		string LevelName;
 		struct Variables *next;

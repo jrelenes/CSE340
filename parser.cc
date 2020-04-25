@@ -294,7 +294,7 @@ void Parser::id_list(struct Variables *tempV1, string Level, vector<string> bar)
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty())
+        if(!temp00->type.empty())
         {
             for(auto k: temp00->variable)
             {
@@ -383,7 +383,7 @@ void Parser::type_name(struct Variables *tempV1)
 cout<<"Syntax Error 10"<<endl;
 
     }
-    tempV1->type = t;
+    tempV1->type = t.lexeme;
     tempV1->ScopeLevel = ScopeLevelCounter;
 
     Token t1 = lexer.GetToken();
@@ -486,7 +486,7 @@ void Parser::assign_stmt(string Level)
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty())
+        if(!temp00->type.empty())
         {
             for(auto k: temp00->variable)
             {
@@ -558,7 +558,9 @@ void Parser::while_stmt(string Level)
 cout<<"Syntax Error 16"<<endl;
 
     }
+        condition_bool = true;
         condition();
+        condition_bool = false;
 
     
     Token t2 = lexer.GetToken();
@@ -664,6 +666,8 @@ cout<<"Syntax Error 20"<<endl;
     t.token_type == DIV)
     {
         arithmetic_operator();
+
+
         arithmetic_expr(left_variable);  //variable  //variable
         arithmetic_expr(left_variable);  //variable
         
@@ -708,8 +712,145 @@ cout<<"Syntax Error 22"<<endl;
     {
 
         //data structure with errors below to be added
+        
         binary_boolean_operator();
+
+        Token y = lexer.GetToken();
+        lexer.UngetToken(y);
+
+    TYPE* temp003 = type_eval;
+    TYPE* temp01 = new TYPE();
+
+    while(temp003->next != NULL)
+    {
+        temp003=temp003->next;
+    }
+
+
+    if(y.token_type != ID)
+    {
+
+                            if(y.token_type != TRUE && y.token_type != FALSE)
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C5";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+
+
+    }
+
+
+
+    if(y.token_type == ID)
+    {
+            Variables* temp00Y = var_types;
+            string left_type;
+            string right_type;
+
+            while(temp00Y != NULL)
+
+            {
+
+                    for(auto k: temp00Y->variable)
+
+                    {
+
+                        if(k.first.lexeme == y.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                        {
+                            left_type = temp00Y->type;
+                        }
+
+                    }
+
+                            if(left_type != "BOOLEAN")
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C5";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+
+            temp00Y = temp00Y->next;
+
+            }
+
+    }
+
         boolean_expr(left_variable);
+
+        Token j = lexer.GetToken();
+        lexer.UngetToken(j);
+
+
+        if(j.token_type != ID)
+        {
+
+                            if(y.token_type != TRUE && y.token_type != FALSE)
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C5";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+        }
+
+
+        if(j.token_type == ID)
+        {
+            Variables* temp00Y = var_types;
+            string left_type;
+            string right_type;
+
+            while(temp00Y != NULL)
+
+            {
+
+                    for(auto k: temp00Y->variable)
+
+                    {
+
+                        if(k.first.lexeme == j.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                        {
+                            left_type = temp00Y->type;
+                        }
+
+                    }
+
+                            if(left_type != "BOOLEAN")
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C5";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+
+            temp00Y = temp00Y->next;
+
+            }
+
+        }
+
+
+
+
         boolean_expr(left_variable);
     }
     else if(t.token_type == GREATER || t.token_type == GTEQ || t.token_type == LESS || 
@@ -746,7 +887,12 @@ cout<<"Syntax Error 23"<<endl;
     else if(t.token_type == NOT)
     {
         lexer.GetToken();
+
+        NOT_bool = true;
+
         boolean_expr(left_variable);
+
+        NOT_bool = false;
     }
     else if(t.token_type == ID || t.token_type == TRUE || t.token_type == FALSE)
     {
@@ -830,108 +976,18 @@ cout<<"Syntax Error 29"<<endl;
 void Parser::primary(string Level, Token left_variable)
 {    Token t = lexer.GetToken();
 
-
-    /*
-    TYPE* temp00 = type_eval;
+    ///////////////////
+    TYPE* temp003 = type_eval;
     TYPE* temp01 = new TYPE();
 
-    while(temp00->next != NULL)
+    while(temp003->next != NULL)
     {
-        temp00=temp00->next;
-    }
-    //error of types
-   
-    pair<bool, string> test;
-
-    Variables* enter = var_types;
-    Token A, B;
-
-    while(enter != NULL)
-    {
-        if(!enter->type.lexeme.empty())
-        {
-            for(auto k: enter->variable)
-            {
-                if(left_variable.lexeme == k.first.lexeme)
-                {
-                    A = enter->type;
-                }
-
-                if(t.lexeme == k.first.lexeme)
-                {
-                    B = enter->type;
-                }
-            }
-           
-        }
-       enter = enter->next;
-
+        temp003=temp003->next;
     }
 
 
-    test = name(A,B);
 
-    //stores token data for mismatch errors
-    Variables* temp00s = var_types;
-    int n1 = 0;
-    int n2 = 0;
-    bool h= false;
-    bool l=false;
-    while(temp00s != NULL)
-    {
-        if(!temp00s->type.lexeme.empty())
-        {
-            for(auto k: temp00s->variable)
-            {
-                if(k.first.token_type == left_variable.token_type)
-                {
-                    h= true;
-
-                }
-
-                if(k.first.token_type == t.token_type)
-                {
-                    //n2 = k.ScopeLevel;
-                    l=true;
-   
-                }
-                
-            }
-            
-        }
-
-       
-            if(h == true)
-            {
-                h=false;
-                n1 = temp00s->ScopeLevel;
-
-            }
-            else if(l == true)
-            {
-                l=false;
-
-                n2 = temp00s->ScopeLevel;
-
-            }
-
-
-       temp00s = temp00s->next;
-
-    }
-if(n1 >= n2)
-{
-
-    if(test.first)
-    {
-        temp01->lineNo = left_variable.line_no;
-        temp01->errorType = test.second;
-        temp01->next = NULL;
-        temp00->next = temp01;
-
-    }
-}   
-    */
+    /////////////////////
 
     if(t.token_type != ID && t.token_type != NUM && t.token_type != REALNUM && 
     t.token_type != STRING_CONSTANT && t.token_type != TRUE && t.token_type != FALSE)
@@ -940,6 +996,92 @@ if(n1 >= n2)
 cout<<"Syntax Error 30"<<endl;
 
     }
+
+    /////////////////
+    
+
+    if(t.token_type != ID)
+    {
+    Variables* temp00Yp = var_types;
+    string left_type_not_ID;
+
+    while(temp00Yp != NULL)
+
+    {
+
+            for(auto k: temp00Yp->variable)
+
+            {
+
+                if(k.first.lexeme == left_variable.lexeme && temp00Yp->ScopeLevel <= ScopeLevelCounter)
+                {
+                    left_type_not_ID = temp00Yp->type;
+                }
+
+
+            }
+                    
+
+                    if(left_type_not_ID == "BOOLEAN"  && !(t.token_type == TRUE || t.token_type == FALSE ) && printh == true)
+                    {
+                        // printh = false;
+                        
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C1";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type_not_ID == "STRING"  && t.token_type != STRING_CONSTANT && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C1";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type_not_ID == "INT"  && !(t.token_type == NUM || t.token_type == TRUE || t.token_type == FALSE) && printh == true)
+                    {
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C2";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type_not_ID == "REAL"  && !(t.token_type == REALNUM || t.token_type == NUM) && printh == true)
+                    {
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C3";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    
+                    
+                    
+            
+       
+
+       temp00Yp = temp00Yp->next;
+
+    }
+
+    }
+
+
+
+
+
+    //////////////////
+
+
+
+
+
+
+
+
 
     if(t.lexeme == "REAL" || t.lexeme == "INT" || t.lexeme == "BOOLEAN" || t.lexeme == "STRING")
     {
@@ -952,6 +1094,88 @@ cout<<"Syntax Error 30"<<endl;
 
     if(t.token_type == ID)
     {
+
+        ///////////////////////////////
+
+
+        Variables* temp00Y = var_types;
+    string left_type;
+    string right_type;
+
+    while(temp00Y != NULL)
+
+    {
+
+            for(auto k: temp00Y->variable)
+
+            {
+
+                if(k.first.lexeme == left_variable.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                {
+                    left_type = temp00Y->type;
+                }
+
+                if(k.first.lexeme == t.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                {
+                    right_type = temp00Y->type;
+                }
+
+            }
+
+
+
+                    if(left_type == "BOOLEAN"  && right_type != "BOOLEAN" && printh == true)
+                    {
+                        // printh = false;
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C1";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type == "STRING"  && right_type != "STRING" && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C1";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type == "INT"  && !(right_type == "INT" || right_type == "BOOLEAN") && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C2";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(left_type == "REAL"  && !(right_type == "INT" || right_type == "REAL") && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C3";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    
+
+
+       
+
+       temp00Y = temp00Y->next;
+
+    }
+
+
+
+
+
+
+
 
         //////////////////////
         Variables* temp00a = var_types;
@@ -1014,7 +1238,7 @@ cout<<"Syntax Error 30"<<endl;
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty())
+        if(!temp00->type.empty())
         {
             for(auto k: temp00->variable)
             {
@@ -1079,10 +1303,44 @@ void Parser::arithmetic_primary(string left_variable)
     if(t.token_type != ID && t.token_type != NUM && t.token_type != REALNUM && 
     t.token_type != STRING_CONSTANT)
     {
-       SyntaxError();
-cout<<"Syntax Error 31"<<endl;
+    //   SyntaxError();
+//cout<<"Syntax Error 31"<<endl;
 
     }
+
+
+
+
+
+    TYPE* temp003 = type_eval;
+    TYPE* temp01 = new TYPE();
+
+    while(temp003->next != NULL)
+    {
+        temp003=temp003->next;
+    }
+
+
+
+    if(t.token_type != ID)
+    {
+                    
+                    if(t.token_type != NUM  && t.token_type != REALNUM && t.token_type != STRING_CONSTANT)
+                    {
+                        // printh = false;
+                        
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C4";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+
+
+    }
+
+
+
         
 /*
     Variables* temp00a = var_types;
@@ -1121,6 +1379,68 @@ cout<<"Syntax Error 31"<<endl;
     if(t.token_type == ID)
     {
 
+
+        
+        Variables* temp00Y = var_types;
+    string right_type;
+
+    while(temp00Y != NULL)
+
+    {
+
+            for(auto k: temp00Y->variable)
+
+            {
+
+                if(k.first.lexeme == t.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                {
+                    right_type = temp00Y->type;
+                }
+
+            }
+
+                    if(right_type == "REAL" && printh == true)
+                    {
+                        // printh = false;
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C4";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                     else if(right_type == "STRING" && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C4";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    else if(right_type == "INT" && printh == true)
+                    {
+
+                         temp01->lineNo = t.line_no;
+                         temp01->errorType = "C4";
+                         temp01->next = NULL;
+                         temp003->next = temp01;
+
+                    }
+                    
+                   
+                    
+
+       temp00Y = temp00Y->next;
+
+    }
+
+
+
+
+
+
+/////////////////////////////////////////////////////
         
         Variables* temp00a = var_types;
         while(temp00a != NULL)
@@ -1178,7 +1498,7 @@ cout<<"Syntax Error 31"<<endl;
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty())
+        if(!temp00->type.empty())
         {
             for(auto k: temp00->variable)
             {
@@ -1263,13 +1583,125 @@ cout<<"Syntax Error 32"<<endl;
 
 
 
+    TYPE* temp003 = type_eval;
+    TYPE* temp01 = new TYPE();
 
+    while(temp003->next != NULL)
+    {
+        temp003=temp003->next;
+    }
+
+
+    if(t.token_type != ID && NOT_bool == true)
+    {
+        
+
+        
+
+                            if(t.token_type != TRUE && t.token_type != FALSE)
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C11";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+
+
+
+    }
 
 
     
-    if(t.token_type == ID)
+    if(t.token_type == ID && condition_bool == true)
     {
         
+
+         Variables* temp00Y = var_types;
+            string left_type;
+            string right_type;
+
+            while(temp00Y != NULL)
+
+            {
+
+                    for(auto k: temp00Y->variable)
+
+                    {
+
+                        if(k.first.lexeme == t.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                        {
+                            left_type = temp00Y->type;
+                        }
+
+                    }
+
+                            if(left_type != "BOOLEAN")
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C10";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+
+            temp00Y = temp00Y->next;
+
+            }
+
+
+    /////////////////
+
+
+
+    if(t.token_type == ID && NOT_bool == true)
+    {
+        
+
+         Variables* temp00Y = var_types;
+            string left_type;
+            string right_type;
+
+            while(temp00Y != NULL)
+
+            {
+
+                    for(auto k: temp00Y->variable)
+
+                    {
+
+                        if(k.first.lexeme == t.lexeme && temp00Y->ScopeLevel <= ScopeLevelCounter)
+                        {
+                            left_type = temp00Y->type;
+                        }
+
+                    }
+
+                            if(left_type != "BOOLEAN")
+                            {
+                                // printh = false;
+
+                                temp01->lineNo = t.line_no;
+                                temp01->errorType = "C11";
+                                temp01->next = NULL;
+                                temp003->next = temp01;
+
+                            }
+            
+
+            temp00Y = temp00Y->next;
+
+            }
+
+
+
+    }
+        //////////////////////////////////////////////////
 
         Variables* temp00a = var_types;
         while(temp00a != NULL)
@@ -1328,7 +1760,7 @@ cout<<"Syntax Error 32"<<endl;
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty() && temp00->ScopeLevel >= 0)
+        if(!temp00->type.empty() && temp00->ScopeLevel >= 0)
         {
             for(auto k: temp00->variable)
             {
@@ -1504,7 +1936,7 @@ int main()
     Variables* temp00 = var_types;
     while(temp00 != NULL)
     {
-        if(!temp00->type.lexeme.empty())
+        if(!temp00->type.empty())
         {
             for(auto k: temp00->variable)
             {
@@ -1528,14 +1960,14 @@ int main()
 
     //////////////
 
-
-    
+    bool enter_a = false;
     Error* temp00A = errorCode;
 
         while(temp00A != NULL)
         {    
             if(!temp00A->error_code.empty() && !temp00A->symbol_name.empty())
             { 
+                enter_a = true;
                 cout<<"ERROR CODE "<<temp00A->error_code<<" ";
                 cout<<temp00A->symbol_name<<endl;
             }
@@ -1547,40 +1979,49 @@ int main()
 
 /*
     Variables* temp00 = var_types;
-    while(temp00 != NULL)
+
+    if(enter_a == false)
     {
-        if(!temp00->type.lexeme.empty())
+        while(temp00 != NULL)
         {
-            for(auto k: temp00->variable)
+            if(!temp00->type.lexeme.empty())
             {
-                cout<<k.lexeme<<" ";
+                for(auto k: temp00->variable)
+                {
+]                    cout<<k.lexeme<<" ";
+                }
+                cout<<" : "<<temp00->type.lexeme<<" "<<temp00->ScopeLevel<<" "<<temp00->LevelName<<endl;
             }
-            cout<<" : "<<temp00->type.lexeme<<" "<<temp00->ScopeLevel<<" "<<temp00->LevelName<<endl;
-        }
-       temp00 = temp00->next;
+        temp00 = temp00->next;
 
+        }
     }
 
 */
 
 
-/*
     TYPE* temp0 = type_eval;
-    while(temp0 != NULL)
+
+    if(enter_a == false)
     {
-       
-        if(!temp0->errorType.empty())
+
+        while(temp0 != NULL)
         {
-            cout<<"TYPE MISMATCH "<<temp0->lineNo<<" ";
-            cout<<temp0->errorType<<endl;
+        
+            if(!temp0->errorType.empty() && enter_b == false)
+            {
+                enter_b = true;
+                cout<<"TYPE MISMATCH "<<temp0->lineNo<<" ";
+                cout<<temp0->errorType<<endl;
+            }
+
+        temp0 = temp0->next;
+
         }
-
-       temp0 = temp0->next;
-
     }
-*/
+
     
-    if(errorCode == NULL || errorCode->next == NULL)
+    if(enter_b == false && enter_a == false) 
     {
 
         UNINITIALIZED *temp7 = uninitialized;
